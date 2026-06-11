@@ -27,7 +27,10 @@ public class GoalService {
     @Transactional(readOnly = true)
     public List<GoalResponse> findAll(UUID userId, String status) {
         GoalStatus parsedStatus = StringUtils.hasText(status) ? parseEnum(GoalStatus.class, status, "status") : null;
-        return goalRepository.findByUserIdAndStatus(userId, parsedStatus).stream().map(this::toResponse).toList();
+        List<Goal> goals = parsedStatus == null
+                ? goalRepository.findByUserIdOrderByCreatedAtDesc(userId)
+                : goalRepository.findByUserIdAndStatusOrderByCreatedAtDesc(userId, parsedStatus);
+        return goals.stream().map(this::toResponse).toList();
     }
 
     @Transactional(readOnly = true)

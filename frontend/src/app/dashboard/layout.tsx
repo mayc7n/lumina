@@ -10,24 +10,24 @@ import { useTheme } from 'next-themes'
 import {
   LayoutDashboard, CheckSquare, Flame, Target, Timer,
   PenLine, BookOpen, GraduationCap, CalendarDays, BarChart2,
-  Users, Search, Bell, ChevronLeft, Sparkles, Moon, Sun,
-  LogOut, Settings, User, ChevronRight
+  Users, Bell, ChevronLeft, Sparkles, Moon, Sun,
+  LogOut, Settings
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const NAV = [
-  { href: '/dashboard',           label: 'Dashboard',  icon: LayoutDashboard, available: true  },
-  { href: '/dashboard/tasks',     label: 'Tarefas',    icon: CheckSquare,     available: true  },
-  { href: '/dashboard/habits',    label: 'Hábitos',    icon: Flame,           available: true  },
-  { href: '/dashboard/goals',     label: 'Metas',      icon: Target,          available: true  },
-  { href: '/dashboard/focus',     label: 'Foco',       icon: Timer,           available: true  },
-  { href: '/dashboard/journal',   label: 'Diário',     icon: PenLine,         available: true  },
-  { href: '/dashboard/books',     label: 'Livros',     icon: BookOpen,        available: true  },
-  { href: '/dashboard/studies',   label: 'Estudos',    icon: GraduationCap,   available: true  },
-  { href: '/dashboard/calendar',  label: 'Calendário', icon: CalendarDays,    available: true  },
-  { href: '/dashboard/analytics', label: 'Analytics',  icon: BarChart2,       available: true  },
-  { href: '/dashboard/social',    label: 'Social',     icon: Users,           available: true  },
-  { href: '/dashboard/settings',  label: 'Configurações', icon: Settings,     available: true  },
+  { href: '/dashboard',           label: 'Dashboard',     icon: LayoutDashboard },
+  { href: '/dashboard/tasks',     label: 'Tarefas',       icon: CheckSquare },
+  { href: '/dashboard/habits',    label: 'Hábitos',       icon: Flame },
+  { href: '/dashboard/goals',     label: 'Metas',         icon: Target },
+  { href: '/dashboard/focus',     label: 'Foco',          icon: Timer },
+  { href: '/dashboard/journal',   label: 'Diário',        icon: PenLine },
+  { href: '/dashboard/books',     label: 'Livros',        icon: BookOpen },
+  { href: '/dashboard/studies',   label: 'Estudos',       icon: GraduationCap },
+  { href: '/dashboard/calendar',  label: 'Calendário',    icon: CalendarDays },
+  { href: '/dashboard/analytics', label: 'Analytics',     icon: BarChart2 },
+  { href: '/dashboard/social',    label: 'Social',        icon: Users },
+  { href: '/dashboard/settings',  label: 'Configurações', icon: Settings },
 ]
 
 function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
@@ -41,6 +41,9 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
   useEffect(() => { fetchNotifications() }, [])
 
   const initials = user?.displayName?.split(' ').filter(Boolean).slice(0, 2).map(n => n[0].toUpperCase()).join('') ?? 'U'
+  const currentSection = NAV.find(item =>
+    pathname === item.href || (item.href !== '/dashboard' && pathname?.startsWith(item.href))
+  )?.label ?? 'Lumina'
 
   async function handleLogout() {
     try {
@@ -80,9 +83,8 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
                   'sidebar-item relative',
                   active && 'active',
                   collapsed && 'justify-center px-0',
-                  !item.available && 'cursor-not-allowed opacity-50 hover:bg-transparent hover:text-foreground-muted',
                 )}
-                whileTap={item.available ? { scale: 0.97 } : undefined}
+                whileTap={{ scale: 0.97 }}
               >
                 {active && <motion.div layoutId="nav-active" className="absolute inset-0 bg-brand/8 rounded-lg" transition={{ duration: 0.2 }} />}
                 <Icon size={16} strokeWidth={active ? 2 : 1.75} className={cn('shrink-0 relative', active ? 'text-brand' : 'text-foreground-muted')} />
@@ -91,18 +93,13 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
                     <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                       className={cn('relative flex min-w-0 flex-1 items-center justify-between gap-2 text-sm', active ? 'text-foreground font-medium' : 'text-foreground-muted')}>
                       <span>{item.label}</span>
-                      {!item.available && <span className="text-2xs font-medium uppercase tracking-wide text-foreground-subtle">Em breve</span>}
                     </motion.span>
                   )}
                 </AnimatePresence>
               </motion.div>
             )
 
-            return (
-              item.available
-                ? <Link key={item.href} href={item.href}>{content}</Link>
-                : <div key={item.href} title={`${item.label}: em desenvolvimento`}>{content}</div>
-            )
+            return <Link key={item.href} href={item.href}>{content}</Link>
           })}
         </nav>
 
@@ -144,11 +141,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Header */}
         <header className="h-14 border-b border-border flex items-center justify-between px-4 shrink-0 bg-background/80 backdrop-blur-sm z-10">
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-background-overlay border border-border rounded-lg text-sm text-foreground-muted">
-            <Search size={14} />
-            <span className="hidden sm:block">Buscar...</span>
-            <kbd className="hidden sm:block text-xs bg-background-elevated border border-border rounded px-1.5 py-0.5 font-mono">⌘K</kbd>
-          </div>
+          <p className="text-sm font-medium text-foreground">{currentSection}</p>
 
           <div className="flex items-center gap-1">
             {/* Theme */}
@@ -157,18 +150,18 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
             </button>
 
             {/* Notifications */}
-            <button className="btn-ghost p-2 relative">
+            <Link href="/dashboard/settings" className="btn-ghost p-2 relative" title="Configurar notificações">
               <Bell size={16} />
               {unreadCount > 0 && <span className="absolute top-1.5 right-1.5 size-2 bg-brand rounded-full" />}
-            </button>
+            </Link>
 
             {/* User menu */}
-            <div className="flex items-center gap-2 pl-1">
+            <Link href="/dashboard/settings" className="flex items-center gap-2 pl-1" title="Abrir configurações do perfil">
               {user?.avatarUrl
                 ? <img src={user.avatarUrl} alt={user.displayName} className="size-7 rounded-full object-cover border border-border" />
                 : <div className="size-7 rounded-full bg-brand/20 flex items-center justify-center text-xs font-semibold text-brand">{initials}</div>
               }
-            </div>
+            </Link>
           </div>
         </header>
 

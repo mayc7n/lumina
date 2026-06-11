@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Users, UserPlus, Search, Heart, MessageCircle, Trophy, Flame, Target, BookOpen, CheckSquare } from 'lucide-react'
+import { Users, UserPlus, Search, Trophy, Flame, Target, BookOpen, CheckSquare } from 'lucide-react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { cn, formatDateRelative, getInitials } from '@/lib/utils'
@@ -29,6 +30,15 @@ export default function SocialPage() {
     { id: 'discover', label: 'Descobrir'  },
   ]
 
+  async function copyInviteLink() {
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}/auth/register`)
+      toast.success('Link de convite copiado')
+    } catch {
+      toast.error('Não foi possível copiar o link')
+    }
+  }
+
   return (
     <div className="flex h-[calc(100vh-56px)]">
       <div className="flex-1 flex flex-col overflow-hidden max-w-2xl mx-auto w-full">
@@ -44,7 +54,7 @@ export default function SocialPage() {
                 <p className="text-xs text-foreground-muted">Evolua junto com seus amigos</p>
               </div>
             </div>
-            <Button size="sm" variant="secondary">
+            <Button size="sm" variant="secondary" onClick={copyInviteLink}>
               <UserPlus className="size-3.5" /> Convidar
             </Button>
           </div>
@@ -143,17 +153,6 @@ export default function SocialPage() {
                               )}
                             </div>
 
-                            {/* Reactions */}
-                            <div className="flex items-center gap-3 mt-2">
-                              <button className="flex items-center gap-1.5 text-xs text-foreground-muted
-                                                 hover:text-red-400 transition-colors">
-                                <Heart className="size-3.5" /> {item.likeCount ?? 0}
-                              </button>
-                              <button className="flex items-center gap-1.5 text-xs text-foreground-muted
-                                                 hover:text-brand transition-colors">
-                                <MessageCircle className="size-3.5" /> Comentar
-                              </button>
-                            </div>
                           </div>
                         </div>
                       </motion.div>

@@ -56,7 +56,7 @@ public class SocialService {
         if (friendshipRepository.findBetween(userId, targetId).isPresent()) {
             throw new ConflictException("Já existe uma solicitação ou amizade com este usuário");
         }
-        Friendship request = friendshipRepository.save(Friendship.builder()
+        Friendship request = friendshipRepository.saveAndFlush(Friendship.builder()
             .requester(userRepository.getReferenceById(userId)).addressee(target).build());
         return new FriendRequestResponse(request.getId().toString(), toSocialUser(target, "PENDING"), request.getCreatedAt().toString());
     }
