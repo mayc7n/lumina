@@ -1,0 +1,17 @@
+# Frontend
+**/node_modules/
+**/.next/
+dist/
+build/
+
+# Backend (Java)
+**/target/
+*.class
+*.jar
+*.war
+
+# IDEs e Ambientes
+.idea/
+.vscode/
+*.iml
+.env*
