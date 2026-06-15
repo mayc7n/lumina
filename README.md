@@ -91,10 +91,78 @@ cd frontend && npm install && npm run dev
 
 ## 🚢 Deploy
 
+O deploy de produção usa Docker Compose, PostgreSQL persistente e Caddy com HTTPS automático.
+
+### Requisitos
+
+- VPS Ubuntu com 4 GB de RAM ou mais
+- domínio ou subdomínio apontado para o IP público do VPS
+- portas TCP `22`, `80` e `443` liberadas; UDP `443` é recomendado para HTTP/3
+- Docker Engine e plugin Docker Compose instalados
+
+### Primeiro deploy
+
+No DNS, crie um registro `A` como `app.seudominio.com` apontando para o IP do VPS.
+Depois, no servidor:
+
 ```bash
-docker compose up -d
-curl https://lumina.app/api/actuator/health
+sudo mkdir -p /opt/lumina
+sudo chown "$USER":"$USER" /opt/lumina
+git clone https://github.com/mayc7n/lumina /opt/lumina
+cd /opt/lumina
+
+cp deploy.env.example .env.production
+nano .env.production
 ```
+
+Gere os segredos:
+
+```bash
+openssl rand -base64 48
+openssl rand -base64 48
+openssl rand -base64 48
+openssl rand -base64 64
+```
+
+Preencha `DOMAIN`, `ACME_EMAIL`, as três senhas e `JWT_SECRET`, então:
+
+```bash
+chmod +x scripts/*.sh
+BUILD_LOCAL=1 ./scripts/deploy.sh
+```
+
+O site ficará disponível em `https://SEU_DOMINIO`. PostgreSQL, Redis e RabbitMQ não
+publicam portas na internet.
+
+Depois que o GitHub Actions publicar as imagens no GHCR, as atualizações normais usam:
+
+```bash
+./scripts/deploy.sh
+```
+
+### Operação
+
+```bash
+# Estado e logs
+docker compose --env-file .env.production -f compose.production.yml ps
+docker compose --env-file .env.production -f compose.production.yml logs -f backend
+
+# Atualizar
+git pull --ff-only
+./scripts/deploy.sh
+
+# Backup do PostgreSQL
+./scripts/backup.sh
+
+# Restaurar um backup
+./scripts/restore.sh backups/lumina-AAAAMMDDTHHMMSSZ.sql.gz
+```
+
+Para deploy automático pelo GitHub Actions, configure:
+
+- Secrets: `PROD_HOST`, `PROD_USER`, `PROD_SSH_KEY`, `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_APP_URL`
+- Variable: `PROD_DOMAIN`
+- diretório `/opt/lumina` já clonado e `.env.production` preenchido no VPS
 
 ## 📄 Licença
 

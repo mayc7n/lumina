@@ -20,6 +20,7 @@ spring:
     port: ${RABBITMQ_PORT:5672}
     username: ${RABBITMQ_USERNAME:lumina}
     password: ${RABBITMQ_PASSWORD:lumina}
+    virtual-host: ${RABBITMQ_VHOST:/lumina}
   jackson:
     serialization.write-dates-as-timestamps: false
     default-property-inclusion: non_null
