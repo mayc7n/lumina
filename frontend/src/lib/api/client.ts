@@ -86,6 +86,7 @@ export const usersApi = {
   getMe: () => apiGet<User>('/users/me'),
   updateProfile: (d: Partial<User>) => apiPatch<User>('/users/me', d),
   uploadAvatar: (file: File) => { const fd = new FormData(); fd.append('file', file); return api.patch<{ data: { avatarUrl: string } }>('/users/me/avatar', fd, { headers: { 'Content-Type': 'multipart/form-data' } }).then(r => r.data.data) },
+  getPreferences: () => apiGet<UserPreferences>('/users/me/preferences'),
   updatePreferences: (d: Record<string, unknown>) => apiPatch<UserPreferences>('/users/me/preferences', d),
   exportData: () => api.get('/users/me/export', { responseType: 'blob' }),
   deleteAccount: (confirmation: string) => api.delete('/users/me', { data: { confirmation } }),
@@ -176,7 +177,16 @@ export const notificationsApi = {
 export interface AuthTokens { accessToken: string; refreshToken: string; expiresIn: number; requiresTwoFactor?: boolean; tempToken?: string }
 export interface User { id: string; email: string; username: string; displayName: string; avatarUrl?: string; bio?: string; timezone: string; locale: string; status: string; role: string; plan: string; emailVerified: boolean; twoFactorEnabled: boolean; onboardingComplete: boolean; lastSeenAt?: string; createdAt: string; accentColor?: string }
 export interface UserSession { id: string; deviceType: string; deviceName?: string; ipAddress?: string; lastUsedAt: string; createdAt: string; current?: boolean }
-export interface UserPreferences { theme: string; accentColor: string; weekStartsOn: number; dailyGoalHours: number; notificationSettings: Record<string, boolean> }
+export interface UserPreferences {
+  theme: string
+  accentColor: string
+  weekStartsOn: number
+  dailyGoalHours: number
+  notificationSettings: Record<string, boolean>
+  focusSettings: Record<string, unknown>
+  privacySettings: Record<string, unknown>
+  dashboardLayout: Record<string, unknown>
+}
 export interface PagedResponse<T> { content: T[]; totalElements: number; totalPages: number; size: number; number: number }
 export interface Task { id: string; title: string; description?: string; status: string; priority: string; dueDate?: string; scheduledFor?: string; estimatedMins?: number; projectId?: string; project?: Project; labels?: Label[]; parentTaskId?: string; subtaskCount?: number; completedSubtaskCount?: number; recurrenceType: string; completedAt?: string; createdAt: string; updatedAt: string }
 export interface TaskQueryParams { status?: string; priority?: string; projectId?: string; dueDateFrom?: string; dueDateTo?: string; search?: string; labelIds?: string[] }

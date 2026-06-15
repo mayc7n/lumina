@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { useAuthStore } from '@/store/authStore'
 import { usersApi } from '@/lib/api/client'
@@ -146,7 +146,20 @@ export function NotificationsSection() {
   const [settings, setSettings] = useState<Record<string, boolean>>(
     Object.fromEntries(NOTIFICATION_SETTINGS.map(s => [s.id, true]))
   )
+  const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    let active = true
+    usersApi.getPreferences()
+      .then(preferences => {
+        if (!active) return
+        setSettings(current => ({ ...current, ...preferences.notificationSettings }))
+      })
+      .catch(() => toast.error('Não foi possível carregar as preferências'))
+      .finally(() => { if (active) setLoading(false) })
+    return () => { active = false }
+  }, [])
 
   const handleSave = async () => {
     setSaving(true)
@@ -167,7 +180,11 @@ export function NotificationsSection() {
         </p>
       </div>
 
-      <div className="space-y-1">
+      {loading ? (
+        <div className="flex items-center gap-2 py-8 text-sm text-foreground-muted">
+          <Loader2 className="size-4 animate-spin" /> Carregando preferências...
+        </div>
+      ) : <div className="space-y-1">
         {NOTIFICATION_SETTINGS.map(setting => (
           <div key={setting.id}
             className="flex items-center justify-between p-3.5 rounded-xl hover:bg-background-overlay transition-colors">
@@ -186,6 +203,10 @@ export function NotificationsSection() {
             </div>
 
             <button
+              type="button"
+              role="switch"
+              aria-checked={settings[setting.id]}
+              aria-label={`${setting.label}: ${settings[setting.id] ? 'ativado' : 'desativado'}`}
               onClick={() => setSettings(s => ({ ...s, [setting.id]: !s[setting.id] }))}
               className={cn(
                 'relative inline-flex size-11 w-11 h-6 rounded-full transition-colors duration-200 shrink-0',
@@ -199,9 +220,9 @@ export function NotificationsSection() {
             </button>
           </div>
         ))}
-      </div>
+      </div>}
 
-      <Button onClick={handleSave} size="sm" loading={saving}>Salvar preferências</Button>
+      <Button onClick={handleSave} size="sm" loading={saving} disabled={loading}>Salvar preferências</Button>
     </div>
   )
 }

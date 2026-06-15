@@ -124,7 +124,7 @@ export default function SocialPage() {
                           <div className="size-9 rounded-full bg-brand/20 flex items-center
                                           justify-center text-sm font-semibold text-brand shrink-0">
                             {item.user.avatarUrl
-                              ? <img src={item.user.avatarUrl} className="size-9 rounded-full object-cover" />
+                              ? <img src={item.user.avatarUrl} alt={item.user.displayName} className="size-9 rounded-full object-cover" />
                               : getInitials(item.user.displayName)
                             }
                           </div>
@@ -199,7 +199,7 @@ export default function SocialPage() {
                       <div className="size-11 rounded-full bg-brand/20 flex items-center justify-center
                                       text-sm font-semibold text-brand shrink-0 relative">
                         {friend.avatarUrl
-                          ? <img src={friend.avatarUrl} className="size-11 rounded-full object-cover" />
+                          ? <img src={friend.avatarUrl} alt={friend.displayName} className="size-11 rounded-full object-cover" />
                           : getInitials(friend.displayName)
                         }
                         {/* Online indicator */}
@@ -248,7 +248,7 @@ export default function SocialPage() {
 
                 {!isSearching && searchQuery.length >= 2 && searchResults.length === 0 && (
                   <p className="text-center text-xs text-foreground-muted py-8">
-                    Nenhum usuário encontrado para "{searchQuery}"
+                    Nenhum usuário encontrado para &quot;{searchQuery}&quot;
                   </p>
                 )}
 
@@ -256,7 +256,7 @@ export default function SocialPage() {
                   {searchResults.map(person => (
                     <div key={person.id} className="card-hover flex items-center gap-3 p-4">
                       <div className="flex size-10 items-center justify-center rounded-full bg-brand/20 text-sm font-semibold text-brand">
-                        {person.avatarUrl ? <img src={person.avatarUrl} className="size-10 rounded-full object-cover" /> : getInitials(person.displayName)}
+                        {person.avatarUrl ? <img src={person.avatarUrl} alt={person.displayName} className="size-10 rounded-full object-cover" /> : getInitials(person.displayName)}
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-semibold">{person.displayName}</p>

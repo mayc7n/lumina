@@ -1,0 +1,10 @@
+{
+  "name": "Lumina",
+  "short_name": "Lumina",
+  "description": "Plataforma pessoal de produtividade, hábitos e evolução.",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#0d1117",
+  "theme_color": "#6366f1",
+  "lang": "pt-BR"
+}

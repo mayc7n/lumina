@@ -49,7 +49,8 @@ export default function CalendarPage() {
   const selectedTasks = selectedDateStr ? (tasksByDate[selectedDateStr] ?? []) : []
 
   return (
-    <div className="flex h-[calc(100vh-56px)]">
+    <div className="h-[calc(100vh-56px)] overflow-x-auto">
+    <div className="flex h-full min-w-[720px]">
       {/* Calendar */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
@@ -213,6 +214,7 @@ export default function CalendarPage() {
 
       <CreateTaskModal open={createOpen} onClose={() => setCreateOpen(false)}
         defaultDate={selectedDate ? format(selectedDate, 'yyyy-MM-dd') : undefined} />
+    </div>
     </div>
   )
 }

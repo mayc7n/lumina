@@ -20,7 +20,12 @@ services:
     networks: [lumina-net]
 
   frontend:
-    build: {context: ./frontend, dockerfile: Dockerfile}
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
     container_name: lumina-frontend
     restart: unless-stopped
     environment:

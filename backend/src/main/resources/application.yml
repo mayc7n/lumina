@@ -9,12 +9,12 @@ spring:
   jpa:
     hibernate.ddl-auto: validate
     open-in-view: false
-    properties.hibernate.dialect: org.hibernate.dialect.PostgreSQLDialect
   flyway.enabled: true
   data.redis:
     host: ${REDIS_HOST:localhost}
     port: ${REDIS_PORT:6379}
     password: ${REDIS_PASSWORD:}
+    repositories.enabled: false
   rabbitmq:
     host: ${RABBITMQ_HOST:localhost}
     port: ${RABBITMQ_PORT:5672}

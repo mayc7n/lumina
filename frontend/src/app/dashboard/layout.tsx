@@ -11,7 +11,7 @@ import {
   LayoutDashboard, CheckSquare, Flame, Target, Timer,
   PenLine, BookOpen, GraduationCap, CalendarDays, BarChart2,
   Users, Bell, ChevronLeft, Sparkles, Moon, Sun,
-  LogOut, Settings
+  LogOut, Settings, Menu, X, CheckCheck, Trash2
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -32,13 +32,22 @@ const NAV = [
 
 function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
+  const [notificationsOpen, setNotificationsOpen] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
   const { user, refreshToken, logout } = useAuthStore()
-  const { unreadCount, fetchNotifications } = useNotificationStore()
+  const {
+    notifications, unreadCount, isLoading: notificationsLoading,
+    fetchNotifications, markRead, markAllRead, removeNotification,
+  } = useNotificationStore()
   const { theme, setTheme } = useTheme()
 
-  useEffect(() => { fetchNotifications() }, [])
+  useEffect(() => { void fetchNotifications() }, [fetchNotifications])
+  useEffect(() => {
+    setMobileOpen(false)
+    setNotificationsOpen(false)
+  }, [pathname])
 
   const initials = user?.displayName?.split(' ').filter(Boolean).slice(0, 2).map(n => n[0].toUpperCase()).join('') ?? 'U'
   const currentSection = NAV.find(item =>
@@ -56,9 +65,21 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
+      {mobileOpen && (
+        <button
+          type="button"
+          aria-label="Fechar menu"
+          onClick={() => setMobileOpen(false)}
+          className="fixed inset-0 z-30 bg-black/50 backdrop-blur-[1px] md:hidden"
+        />
+      )}
+
       {/* Sidebar */}
       <motion.aside animate={{ width: collapsed ? 60 : 240 }} transition={{ duration: 0.25, ease: [0.4,0,0.2,1] }}
-        className="relative flex flex-col border-r border-border bg-background-elevated z-20 shrink-0 overflow-hidden">
+        className={cn(
+          'fixed inset-y-0 left-0 z-40 flex shrink-0 -translate-x-full flex-col overflow-hidden border-r border-border bg-background-elevated transition-transform duration-200 md:relative md:z-20 md:translate-x-0',
+          mobileOpen && 'translate-x-0',
+        )}>
         {/* Logo */}
         <div className={cn('flex items-center h-14 px-4 border-b border-border shrink-0', collapsed ? 'justify-center' : 'gap-3')}>
           <div className="size-7 rounded-lg bg-brand flex items-center justify-center shrink-0">
@@ -70,6 +91,10 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
                 className="font-semibold text-base tracking-tight">Lumina</motion.span>
             )}
           </AnimatePresence>
+          <button type="button" onClick={() => setMobileOpen(false)}
+            className="btn-ghost ml-auto p-1.5 md:hidden" aria-label="Fechar menu">
+            <X size={17} />
+          </button>
         </div>
 
         {/* Nav */}
@@ -99,7 +124,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
               </motion.div>
             )
 
-            return <Link key={item.href} href={item.href}>{content}</Link>
+            return <Link key={item.href} href={item.href} onClick={() => setMobileOpen(false)}>{content}</Link>
           })}
         </nav>
 
@@ -126,7 +151,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
               </button>
             </div>
           )}
-          <button onClick={() => setCollapsed(!collapsed)} className="sidebar-item w-full">
+          <button onClick={() => setCollapsed(!collapsed)} className="sidebar-item hidden w-full md:flex">
             <motion.div animate={{ rotate: collapsed ? 180 : 0 }} transition={{ duration: 0.25 }}>
               <ChevronLeft size={16} className="text-foreground-muted" />
             </motion.div>
@@ -141,7 +166,13 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Header */}
         <header className="h-14 border-b border-border flex items-center justify-between px-4 shrink-0 bg-background/80 backdrop-blur-sm z-10">
-          <p className="text-sm font-medium text-foreground">{currentSection}</p>
+          <div className="flex min-w-0 items-center gap-2">
+            <button type="button" onClick={() => setMobileOpen(true)}
+              className="btn-ghost p-2 md:hidden" aria-label="Abrir menu">
+              <Menu size={18} />
+            </button>
+            <p className="truncate text-sm font-medium text-foreground">{currentSection}</p>
+          </div>
 
           <div className="flex items-center gap-1">
             {/* Theme */}
@@ -150,10 +181,66 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
             </button>
 
             {/* Notifications */}
-            <Link href="/dashboard/settings" className="btn-ghost p-2 relative" title="Configurar notificações">
-              <Bell size={16} />
-              {unreadCount > 0 && <span className="absolute top-1.5 right-1.5 size-2 bg-brand rounded-full" />}
-            </Link>
+            <div className="relative">
+              <button type="button" onClick={() => setNotificationsOpen(open => !open)}
+                className="btn-ghost relative p-2" title="Abrir notificações"
+                aria-label={`Notificações${unreadCount ? `, ${unreadCount} não lidas` : ''}`}
+                aria-expanded={notificationsOpen}>
+                <Bell size={16} />
+                {unreadCount > 0 && <span className="absolute right-1.5 top-1.5 size-2 rounded-full bg-brand" />}
+              </button>
+
+              {notificationsOpen && (
+                <div className="absolute right-0 top-11 z-50 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-xl border border-border bg-background-elevated shadow-lg">
+                  <div className="flex items-center justify-between border-b border-border px-4 py-3">
+                    <div>
+                      <p className="text-sm font-semibold">Notificações</p>
+                      <p className="text-2xs text-foreground-muted">{unreadCount} não lida{unreadCount === 1 ? '' : 's'}</p>
+                    </div>
+                    {unreadCount > 0 && (
+                      <button type="button" onClick={() => void markAllRead()}
+                        className="btn-ghost px-2 py-1 text-xs">
+                        <CheckCheck size={14} /> Marcar todas
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="max-h-96 overflow-y-auto">
+                    {notificationsLoading ? (
+                      <p className="px-4 py-8 text-center text-xs text-foreground-muted">Carregando...</p>
+                    ) : notifications.length === 0 ? (
+                      <p className="px-4 py-10 text-center text-xs text-foreground-muted">Nenhuma notificação por enquanto.</p>
+                    ) : notifications.map(notification => (
+                      <div key={notification.id}
+                        className={cn('group flex gap-3 border-b border-border/70 px-4 py-3 last:border-0', !notification.isRead && 'bg-brand/5')}>
+                        <button type="button"
+                          onClick={() => { if (!notification.isRead) void markRead(notification.id) }}
+                          className="min-w-0 flex-1 text-left">
+                          <div className="flex items-center gap-2">
+                            {!notification.isRead && <span className="size-1.5 shrink-0 rounded-full bg-brand" />}
+                            <p className="truncate text-xs font-semibold">{notification.title}</p>
+                          </div>
+                          {notification.body && <p className="mt-1 line-clamp-2 text-xs leading-5 text-foreground-muted">{notification.body}</p>}
+                          <p className="mt-1 text-2xs text-foreground-subtle">
+                            {new Date(notification.createdAt).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
+                          </p>
+                        </button>
+                        <button type="button" onClick={() => void removeNotification(notification.id)}
+                          className="self-start rounded-md p-1 text-foreground-subtle opacity-70 transition hover:bg-danger-muted hover:text-danger md:opacity-0 md:group-hover:opacity-100"
+                          aria-label={`Excluir notificação: ${notification.title}`}>
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  <Link href="/dashboard/settings"
+                    className="block border-t border-border px-4 py-2.5 text-center text-xs font-medium text-brand hover:bg-background-overlay">
+                    Configurar notificações
+                  </Link>
+                </div>
+              )}
+            </div>
 
             {/* User menu */}
             <Link href="/dashboard/settings" className="flex items-center gap-2 pl-1" title="Abrir configurações do perfil">

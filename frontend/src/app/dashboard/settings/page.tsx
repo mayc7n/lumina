@@ -46,19 +46,19 @@ export default function SettingsPage() {
   ]
 
   return (
-    <div className="flex min-h-full">
-      <aside className="w-64 shrink-0 border-r border-border bg-background-elevated p-4">
+    <div className="flex min-h-full flex-col lg:flex-row">
+      <aside className="shrink-0 border-b border-border bg-background-elevated p-3 lg:w-64 lg:border-b-0 lg:border-r lg:p-4">
         <div className="mb-5 flex items-center gap-2 px-2"><Settings className="size-4 text-brand" /><h1 className="text-sm font-semibold">Configurações</h1></div>
-        <nav className="space-y-1">
+        <nav className="flex gap-1 overflow-x-auto lg:block lg:space-y-1">
           {sections.map(item => (
             <button key={item.id} onClick={() => setSection(item.id)}
-              className={cn('sidebar-item w-full', section === item.id && 'active')}>
-              <item.icon className="size-4" /><span className="text-sm">{item.label}</span>
+              className={cn('sidebar-item shrink-0 lg:w-full', section === item.id && 'active')}>
+              <item.icon className="size-4" /><span className="whitespace-nowrap text-sm">{item.label}</span>
             </button>
           ))}
         </nav>
       </aside>
-      <main className="flex-1 p-8">
+      <main className="flex-1 p-4 sm:p-6 lg:p-8">
         <div className="mx-auto max-w-3xl">
           {section === 'profile' && (
             <form onSubmit={saveProfile} className="space-y-6">

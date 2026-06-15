@@ -7,7 +7,7 @@ interface NotificationStore {
   fetchNotifications: () => Promise<void>
   markRead: (id: string) => Promise<void>
   markAllRead: () => Promise<void>
-  removeNotification: (id: string) => void
+  removeNotification: (id: string) => Promise<void>
   addNotification: (n: Notification) => void
 }
 
@@ -22,16 +22,36 @@ export const useNotificationStore = create<NotificationStore>()(
       } catch { set(s => { s.isLoading = false }) }
     },
     markRead: async id => {
+      const previous = useNotificationStore.getState().notifications.find(n => n.id === id)
       set(s => { const n = s.notifications.find(x => x.id === id); if (n && !n.isRead) { n.isRead = true; s.unreadCount = Math.max(0, s.unreadCount - 1) } })
-      await notificationsApi.markRead(id)
+      try {
+        await notificationsApi.markRead(id)
+      } catch (error) {
+        if (previous && !previous.isRead) {
+          set(s => { const n = s.notifications.find(x => x.id === id); if (n) n.isRead = false; s.unreadCount++ })
+        }
+        throw error
+      }
     },
     markAllRead: async () => {
+      const previous = useNotificationStore.getState().notifications.map(notification => ({ ...notification }))
       set(s => { s.notifications.forEach(n => { n.isRead = true }); s.unreadCount = 0 })
-      await notificationsApi.markAllRead()
+      try {
+        await notificationsApi.markAllRead()
+      } catch (error) {
+        set(s => { s.notifications = previous; s.unreadCount = previous.filter(n => !n.isRead).length })
+        throw error
+      }
     },
-    removeNotification: id => {
+    removeNotification: async id => {
+      const previous = useNotificationStore.getState().notifications.map(notification => ({ ...notification }))
       set(s => { const i = s.notifications.findIndex(n => n.id === id); if (i !== -1) { if (!s.notifications[i].isRead) s.unreadCount--; s.notifications.splice(i, 1) } })
-      notificationsApi.delete(id)
+      try {
+        await notificationsApi.delete(id)
+      } catch (error) {
+        set(s => { s.notifications = previous; s.unreadCount = previous.filter(n => !n.isRead).length })
+        throw error
+      }
     },
     addNotification: n => set(s => { s.notifications.unshift(n); if (!n.isRead) s.unreadCount++ }),
   }))
