@@ -1,7 +1,34 @@
 import { create } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
+import { persist, createJSONStorage, type StateStorage } from 'zustand/middleware'
 import { immer } from 'zustand/middleware/immer'
 import type { User } from '@/lib/api/client'
+
+const memoryStorage: StateStorage = {
+  getItem: () => null,
+  setItem: () => undefined,
+  removeItem: () => undefined,
+}
+
+const getAuthStorage = (): StateStorage => {
+  if (typeof window === 'undefined') return memoryStorage
+
+  return {
+    getItem: name => {
+      const value = localStorage.getItem(name)
+      if (!value) return null
+
+      try {
+        JSON.parse(value)
+        return value
+      } catch {
+        localStorage.removeItem(name)
+        return null
+      }
+    },
+    setItem: (name, value) => localStorage.setItem(name, value),
+    removeItem: name => localStorage.removeItem(name),
+  }
+}
 
 interface AuthStore {
   user: User | null
@@ -27,6 +54,10 @@ export const useAuthStore = create<AuthStore>()(
       logout: () => set(s => { s.user = null; s.accessToken = null; s.refreshToken = null; s.isAuthenticated = false; s.isLoading = false }),
       setLoading: v => set(s => { s.isLoading = v }),
     })),
-    { name: 'lumina-auth', storage: createJSONStorage(() => typeof window !== 'undefined' ? localStorage : { getItem: () => null, setItem: () => {}, removeItem: () => {} }), partialize: s => ({ accessToken: s.accessToken, refreshToken: s.refreshToken }) }
+    {
+      name: 'lumina-auth',
+      storage: createJSONStorage(getAuthStorage),
+      partialize: s => ({ accessToken: s.accessToken, refreshToken: s.refreshToken }),
+    }
   )
 )

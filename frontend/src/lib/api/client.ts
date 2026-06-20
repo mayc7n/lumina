@@ -1,4 +1,5 @@
 import axios, { type AxiosInstance, type InternalAxiosRequestConfig } from 'axios'
+import { useAuthStore } from '@/store/authStore'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8080/api'
 
@@ -9,20 +10,39 @@ export const api: AxiosInstance = axios.create({
 
 let isRefreshing = false
 let queue: Array<{ resolve: (t: string) => void; reject: (e: unknown) => void }> = []
+
+interface StoredAuth {
+  state?: {
+    accessToken?: string | null
+    refreshToken?: string | null
+  }
+}
+
+const readStoredAuth = (): StoredAuth | null => {
+  if (typeof window === 'undefined') return null
+
+  const raw = localStorage.getItem('lumina-auth')
+  if (!raw) return null
+
+  try {
+    const parsed: unknown = JSON.parse(raw)
+    if (!parsed || typeof parsed !== 'object') throw new Error('Invalid auth storage')
+    return parsed as StoredAuth
+  } catch {
+    localStorage.removeItem('lumina-auth')
+    return null
+  }
+}
+
 const processQueue = (err: unknown, token: string | null = null) => {
   queue.forEach(({ resolve, reject }) => err ? reject(err) : resolve(token!))
   queue = []
 }
 
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-  if (typeof window !== 'undefined') {
-    const raw = localStorage.getItem('lumina-auth')
-    if (raw) {
-      try {
-        const { state } = JSON.parse(raw)
-        if (state?.accessToken) config.headers.Authorization = `Bearer ${state.accessToken}`
-      } catch {}
-    }
+  const accessToken = useAuthStore.getState().accessToken ?? readStoredAuth()?.state?.accessToken
+  if (accessToken) {
+    config.headers.Authorization = `Bearer ${accessToken}`
   }
   return config
 })
@@ -34,19 +54,18 @@ api.interceptors.response.use(r => r, async error => {
     .then(t => { orig.headers.Authorization = `Bearer ${t}`; return api(orig) })
   orig._retry = true; isRefreshing = true
   try {
-    const raw = typeof window !== 'undefined' ? localStorage.getItem('lumina-auth') : null
-    const { state } = raw ? JSON.parse(raw) : { state: {} }
-    if (!state?.refreshToken) throw new Error('No refresh token')
-    const res = await axios.post(`${API_URL}/auth/refresh`, { refreshToken: state.refreshToken })
-    const { accessToken, refreshToken } = res.data.data
-    const parsed = JSON.parse(raw!)
-    parsed.state.accessToken = accessToken; parsed.state.refreshToken = refreshToken
-    localStorage.setItem('lumina-auth', JSON.stringify(parsed))
+    const currentRefreshToken = useAuthStore.getState().refreshToken ?? readStoredAuth()?.state?.refreshToken
+    if (!currentRefreshToken) throw new Error('No refresh token')
+    const res = await axios.post(`${API_URL}/auth/refresh`, { refreshToken: currentRefreshToken })
+    const { accessToken, refreshToken: nextRefreshToken } = res.data.data
+    useAuthStore.getState().setTokens(accessToken, nextRefreshToken)
     processQueue(null, accessToken)
     orig.headers.Authorization = `Bearer ${accessToken}`
     return api(orig)
   } catch (e) {
-    processQueue(e); localStorage.removeItem('lumina-auth'); window.location.href = '/auth/login'
+    processQueue(e)
+    useAuthStore.getState().logout()
+    window.location.href = '/auth/login'
     return Promise.reject(e)
   } finally { isRefreshing = false }
 })
