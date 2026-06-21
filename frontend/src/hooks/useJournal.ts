@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { journalApi, type CreateJournalRequest } from '@/lib/api/client'
+import { journalApi, type CreateJournalRequest, type JournalEntry } from '@/lib/api/client'
 import { toast } from 'sonner'
+import { asArray } from '@/lib/utils'
 
 const journalKeys = { all: ['journal'] as const }
 
@@ -10,6 +11,7 @@ export function useJournal(search?: string) {
     queryKey: [...journalKeys.all, search],
     queryFn: () => journalApi.getAll(search ? { search } : undefined),
     staleTime: 30_000,
+    select: data => asArray<JournalEntry>(data),
   })
   const refresh = () => queryClient.invalidateQueries({ queryKey: journalKeys.all })
 
@@ -26,10 +28,12 @@ export function useJournal(search?: string) {
   const deleteMutation = useMutation({
     mutationFn: journalApi.delete,
     onSuccess: () => { refresh(); toast.success('Entrada excluída') },
+    onError: () => toast.error('Não foi possível excluir a entrada'),
   })
   const pinMutation = useMutation({
     mutationFn: journalApi.togglePin,
     onSuccess: refresh,
+    onError: () => toast.error('Não foi possível atualizar o destaque'),
   })
 
   return {

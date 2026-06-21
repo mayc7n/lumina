@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { focusApi } from '@/lib/api/client'
+import { focusApi, type FocusSession } from '@/lib/api/client'
 import { toast } from 'sonner'
+import { asArray } from '@/lib/utils'
 
 const focusKeys = {
   history: ['focus', 'history'] as const,
@@ -13,6 +14,7 @@ export function useFocus() {
     queryKey: focusKeys.history,
     queryFn: () => focusApi.getHistory(),
     staleTime: 15_000,
+    select: data => asArray<FocusSession>(data),
   })
   const statsQuery = useQuery({
     queryKey: focusKeys.stats,
@@ -50,6 +52,7 @@ export function useFocus() {
       refresh()
       toast.success('Sessão encerrada')
     },
+    onError: () => toast.error('Não foi possível encerrar a sessão'),
   })
 
   const sessions = historyQuery.data ?? []

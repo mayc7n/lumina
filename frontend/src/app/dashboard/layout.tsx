@@ -198,7 +198,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
                       <p className="text-2xs text-foreground-muted">{unreadCount} não lida{unreadCount === 1 ? '' : 's'}</p>
                     </div>
                     {unreadCount > 0 && (
-                      <button type="button" onClick={() => void markAllRead()}
+                      <button type="button" onClick={() => void markAllRead().catch(() => undefined)}
                         className="btn-ghost px-2 py-1 text-xs">
                         <CheckCheck size={14} /> Marcar todas
                       </button>
@@ -213,8 +213,8 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
                     ) : notifications.map(notification => (
                       <div key={notification.id}
                         className={cn('group flex gap-3 border-b border-border/70 px-4 py-3 last:border-0', !notification.isRead && 'bg-brand/5')}>
-                        <button type="button"
-                          onClick={() => { if (!notification.isRead) void markRead(notification.id) }}
+                          <button type="button"
+                          onClick={() => { if (!notification.isRead) void markRead(notification.id).catch(() => undefined) }}
                           className="min-w-0 flex-1 text-left">
                           <div className="flex items-center gap-2">
                             {!notification.isRead && <span className="size-1.5 shrink-0 rounded-full bg-brand" />}
@@ -222,10 +222,10 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
                           </div>
                           {notification.body && <p className="mt-1 line-clamp-2 text-xs leading-5 text-foreground-muted">{notification.body}</p>}
                           <p className="mt-1 text-2xs text-foreground-subtle">
-                            {new Date(notification.createdAt).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
+                            {formatNotificationDate(notification.createdAt)}
                           </p>
                         </button>
-                        <button type="button" onClick={() => void removeNotification(notification.id)}
+                        <button type="button" onClick={() => void removeNotification(notification.id).catch(() => undefined)}
                           className="self-start rounded-md p-1 text-foreground-subtle opacity-70 transition hover:bg-danger-muted hover:text-danger md:opacity-0 md:group-hover:opacity-100"
                           aria-label={`Excluir notificação: ${notification.title}`}>
                           <Trash2 size={13} />
@@ -261,6 +261,13 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
       </div>
     </div>
   )
+}
+
+function formatNotificationDate(value: string) {
+  const date = new Date(value)
+  return Number.isNaN(date.getTime())
+    ? 'Agora'
+    : date.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
 }
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {

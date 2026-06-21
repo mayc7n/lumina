@@ -7,6 +7,7 @@ import { GoalCard } from '@/components/features/goals/GoalCard'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { Button } from '@/components/ui/Button'
 import { useGoals } from '@/hooks/useGoals'
+import { clamp } from '@/lib/utils'
 import type { Goal } from '@/lib/api/client'
 
 const COLORS = ['#8b5cf6', '#6366f1', '#ec4899', '#f97316', '#10b981', '#06b6d4']
@@ -27,28 +28,40 @@ export default function GoalsPage() {
   async function submit(event: FormEvent) {
     event.preventDefault()
     if (!title.trim()) return
-    await createGoal({
-      title: title.trim(),
-      description: description.trim() || undefined,
-      color,
-      period,
-      startDate: new Date().toISOString().slice(0, 10),
-      targetValue: targetValue ? Number(targetValue) : undefined,
-      unit: unit.trim() || undefined,
-    })
-    setTitle('')
-    setDescription('')
-    setTargetValue('')
-    setUnit('')
-    setCreating(false)
+    const parsedTarget = targetValue ? Number(targetValue) : undefined
+    if (parsedTarget != null && (!Number.isFinite(parsedTarget) || parsedTarget <= 0)) return
+    try {
+      await createGoal({
+        title: title.trim(),
+        description: description.trim() || undefined,
+        color,
+        period,
+        startDate: new Date().toISOString().slice(0, 10),
+        targetValue: parsedTarget,
+        unit: unit.trim() || undefined,
+      })
+      setTitle('')
+      setDescription('')
+      setTargetValue('')
+      setUnit('')
+      setCreating(false)
+    } catch {
+      // Toast is handled by the hook.
+    }
   }
 
   async function submitCheckIn(event: FormEvent) {
     event.preventDefault()
     if (!selected || progress === '') return
-    await checkIn({ id: selected.id, value: Number(progress) })
-    setProgress('')
-    setSelected(null)
+    const value = Number(progress)
+    if (!Number.isFinite(value) || value < 0) return
+    try {
+      await checkIn({ id: selected.id, value })
+      setProgress('')
+      setSelected(null)
+    } catch {
+      // Toast is handled by the hook.
+    }
   }
 
   return (
@@ -102,7 +115,7 @@ export default function GoalsPage() {
                 </div>
                 <div>
                   <h2 className="text-sm font-semibold">{selected.title}</h2>
-                  <p className="text-xs text-foreground-muted">{Math.round(selected.progressPct)}% concluído</p>
+                  <p className="text-xs text-foreground-muted">{Math.round(clamp(selected.progressPct))}% concluído</p>
                 </div>
               </div>
               <button onClick={() => setSelected(null)} className="btn-ghost p-2"><X className="size-4" /></button>
@@ -116,7 +129,7 @@ export default function GoalsPage() {
                   <strong>{selected.currentValue}{selected.unit ? ` ${selected.unit}` : ''}</strong>
                 </div>
                 <div className="progress-bar">
-                  <div className="progress-fill" style={{ width: `${selected.progressPct}%`, background: selected.color }} />
+                  <div className="progress-fill" style={{ width: `${clamp(selected.progressPct)}%`, background: selected.color }} />
                 </div>
               </div>
 

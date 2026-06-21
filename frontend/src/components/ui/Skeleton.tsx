@@ -3,6 +3,8 @@ import { type LucideIcon } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 
+const SKELETON_WIDTHS = [72, 88, 64, 80, 68, 92]
+
 export function Skeleton({ className, style }: { className?: string; style?: CSSProperties }) {
   return <div className={cn('shimmer rounded-md bg-background-overlay', className)} style={style} />
 }
@@ -28,7 +30,7 @@ export function SkeletonList({ count = 5 }: { count?: number }) {
       {Array.from({ length: count }).map((_, i) => (
         <div key={i} className="flex items-center gap-3 p-2">
           <Skeleton className="size-4 rounded" />
-          <Skeleton className="h-3.5 flex-1" style={{ width: `${60 + Math.random() * 30}%` }} />
+          <Skeleton className="h-3.5 flex-1" style={{ width: `${SKELETON_WIDTHS[i % SKELETON_WIDTHS.length]}%` }} />
         </div>
       ))}
     </div>

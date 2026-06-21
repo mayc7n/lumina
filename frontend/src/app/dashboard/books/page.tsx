@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { useBooks } from '@/hooks/useBooks'
 import type { Book } from '@/lib/api/client'
-import { cn } from '@/lib/utils'
+import { clamp, cn } from '@/lib/utils'
 
 const TABS = [
   { value: undefined, label: 'Todos' },
@@ -29,20 +29,32 @@ export default function BooksPage() {
   async function submit(event: FormEvent) {
     event.preventDefault()
     if (!title.trim()) return
-    await createBook({
-      title: title.trim(), author: author.trim() || undefined,
-      totalPages: totalPages ? Number(totalPages) : undefined,
-      status: 'WANT_TO_READ',
-    })
-    setTitle(''); setAuthor(''); setTotalPages(''); setCreating(false)
+    const parsedTotalPages = totalPages ? Number(totalPages) : undefined
+    if (parsedTotalPages != null && (!Number.isFinite(parsedTotalPages) || parsedTotalPages < 1)) return
+    try {
+      await createBook({
+        title: title.trim(), author: author.trim() || undefined,
+        totalPages: parsedTotalPages,
+        status: 'WANT_TO_READ',
+      })
+      setTitle(''); setAuthor(''); setTotalPages(''); setCreating(false)
+    } catch {
+      // Toast is handled by the hook.
+    }
   }
 
   async function registerReading(event: FormEvent) {
     event.preventDefault()
     if (!selected || !pagesRead) return
-    await logReading({ id: selected.id, pagesRead: Number(pagesRead) })
-    setPagesRead('')
-    setSelected(null)
+    const parsedPages = Number(pagesRead)
+    if (!Number.isFinite(parsedPages) || parsedPages < 1) return
+    try {
+      await logReading({ id: selected.id, pagesRead: parsedPages })
+      setPagesRead('')
+      setSelected(null)
+    } catch {
+      // Toast is handled by the hook.
+    }
   }
 
   return (
@@ -75,7 +87,7 @@ export default function BooksPage() {
                 <div className="relative aspect-[2/3] overflow-hidden rounded-xl border border-border bg-gradient-to-br from-cyan-950 to-indigo-950 shadow-lg transition-transform group-hover:-translate-y-1">
                   {book.coverUrl ? <img src={book.coverUrl} alt="" className="size-full object-cover" /> :
                     <div className="flex size-full flex-col items-center justify-center p-4 text-center"><BookOpen className="mb-3 size-8 text-cyan-400" /><span className="text-sm font-semibold text-white">{book.title}</span></div>}
-                  {book.progressPct != null && book.progressPct > 0 && <div className="absolute inset-x-0 bottom-0 h-1 bg-black/50"><div className="h-full bg-cyan-400" style={{ width: `${book.progressPct}%` }} /></div>}
+                  {book.progressPct != null && book.progressPct > 0 && <div className="absolute inset-x-0 bottom-0 h-1 bg-black/50"><div className="h-full bg-cyan-400" style={{ width: `${clamp(book.progressPct)}%` }} /></div>}
                 </div>
                 <p className="mt-2 truncate text-sm font-medium">{book.title}</p>
                 <p className="truncate text-xs text-foreground-muted">{book.author || 'Autor não informado'}</p>
@@ -94,7 +106,7 @@ export default function BooksPage() {
               </div>
               <div className="my-5">
                 <div className="mb-2 flex justify-between text-xs"><span className="text-foreground-muted">Progresso</span><strong>{selected.currentPage} / {selected.totalPages ?? '?'} páginas</strong></div>
-                <div className="progress-bar"><div className="progress-fill bg-cyan-500" style={{ width: `${selected.progressPct ?? 0}%` }} /></div>
+                <div className="progress-bar"><div className="progress-fill bg-cyan-500" style={{ width: `${clamp(selected.progressPct ?? 0)}%` }} /></div>
               </div>
               <form onSubmit={registerReading} className="space-y-3">
                 <label className="block text-xs font-medium text-foreground-muted">Páginas lidas nesta sessão
@@ -103,7 +115,7 @@ export default function BooksPage() {
                 </label>
                 <Button className="w-full" type="submit" disabled={!pagesRead}>Registrar leitura</Button>
               </form>
-              <Button variant="ghost" className="mt-3 w-full text-danger" onClick={async () => { await deleteBook(selected.id); setSelected(null) }}>
+              <Button variant="ghost" className="mt-3 w-full text-danger" onClick={async () => { try { await deleteBook(selected.id); setSelected(null) } catch { /* Toast is handled by the hook. */ } }}>
                 <Trash2 className="size-4" /> Remover da biblioteca
               </Button>
             </motion.div>

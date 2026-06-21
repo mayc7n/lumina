@@ -178,7 +178,7 @@ export default function SocialPage() {
                           <p className="text-sm font-medium">{request.user.displayName}</p>
                           <p className="text-xs text-foreground-muted">@{request.user.username}</p>
                         </div>
-                        <Button size="xs" onClick={() => acceptRequest(request.id)}>Aceitar</Button>
+                        <Button size="xs" onClick={() => void acceptRequest(request.id).catch(() => undefined)}>Aceitar</Button>
                       </div>
                     ))}
                   </div>
@@ -267,7 +267,7 @@ export default function SocialPage() {
                           {person.friendshipStatus === 'ACCEPTED' ? 'Amigo' : 'Solicitação enviada'}
                         </span>
                       ) : (
-                        <Button size="xs" variant="secondary" onClick={() => sendRequest(person.id)}>
+                        <Button size="xs" variant="secondary" onClick={() => void sendRequest(person.id).catch(() => undefined)}>
                           <UserPlus className="size-3.5" /> Adicionar
                         </Button>
                       )}

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { tasksApi, type Task, type CreateTaskRequest } from '@/lib/api/client'
+import { tasksApi, type Task, type CreateTaskRequest, type PagedResponse } from '@/lib/api/client'
 import { toast } from 'sonner'
+import { asArray } from '@/lib/utils'
 
 export const taskKeys = {
   all: ['tasks'] as const,
@@ -12,8 +13,18 @@ export const taskKeys = {
 
 export function useTasks(params?: Record<string, unknown>) {
   const qc = useQueryClient()
-  const query = useQuery({ queryKey: taskKeys.list(params), queryFn: () => tasksApi.getAll(params), staleTime: 30_000, select: d => d.content })
-  const todayQ = useQuery({ queryKey: taskKeys.today(), queryFn: tasksApi.getToday, staleTime: 60_000 })
+  const query = useQuery({
+    queryKey: taskKeys.list(params),
+    queryFn: () => tasksApi.getAll(params),
+    staleTime: 30_000,
+    select: d => asArray<Task>(d?.content),
+  })
+  const todayQ = useQuery({
+    queryKey: taskKeys.today(),
+    queryFn: tasksApi.getToday,
+    staleTime: 60_000,
+    select: data => asArray<Task>(data),
+  })
 
   const createMut = useMutation({
     mutationFn: (d: CreateTaskRequest) => tasksApi.create(d),
@@ -26,8 +37,7 @@ export function useTasks(params?: Record<string, unknown>) {
     onMutate: async id => {
       await qc.cancelQueries({ queryKey: taskKeys.all })
       const prev = qc.getQueriesData({ queryKey: taskKeys.all })
-      qc.setQueriesData({ queryKey: taskKeys.all }, (old: Task[] | undefined) =>
-        old?.map(t => t.id === id ? { ...t, status: t.status === 'DONE' ? 'TODO' : 'DONE', completedAt: t.status === 'DONE' ? undefined : new Date().toISOString() } : t))
+      qc.setQueriesData({ queryKey: taskKeys.all }, old => updateTaskCacheValue(old, id))
       return { prev }
     },
     onError: (_, __, ctx) => { ctx?.prev?.forEach(([k, v]) => qc.setQueryData(k, v)) },
@@ -56,6 +66,42 @@ export function useTasks(params?: Record<string, unknown>) {
     deleteTask: deleteMut.mutateAsync,
     isCreating: createMut.isPending,
   }
+}
+
+function toggleTaskSnapshot(task: Task): Task {
+  const isDone = task.status === 'DONE'
+  return {
+    ...task,
+    status: isDone ? 'TODO' : 'DONE',
+    completedAt: isDone ? undefined : new Date().toISOString(),
+  }
+}
+
+function updateTaskCacheValue(old: unknown, id: string): unknown {
+  if (Array.isArray(old)) {
+    return old.map(item => isTask(item) && item.id === id ? toggleTaskSnapshot(item) : item)
+  }
+
+  if (isPagedTasks(old)) {
+    return {
+      ...old,
+      content: old.content.map(task => task.id === id ? toggleTaskSnapshot(task) : task),
+    }
+  }
+
+  if (isTask(old) && old.id === id) {
+    return toggleTaskSnapshot(old)
+  }
+
+  return old
+}
+
+function isTask(value: unknown): value is Task {
+  return Boolean(value && typeof value === 'object' && 'id' in value && 'status' in value)
+}
+
+function isPagedTasks(value: unknown): value is PagedResponse<Task> {
+  return Boolean(value && typeof value === 'object' && Array.isArray((value as PagedResponse<Task>).content))
 }
 
 export function useTaskDetail(id: string) {

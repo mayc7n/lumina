@@ -6,9 +6,8 @@ import { GraduationCap, Plus, Clock, BookOpen, TrendingUp, Play, Square } from '
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { useStudies } from '@/hooks/useStudies'
-import { cn, formatDuration, ACCENT_COLORS } from '@/lib/utils'
+import { clamp, cn, formatDate, formatDuration, ACCENT_COLORS } from '@/lib/utils'
 import { format } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
 
 export default function StudiesPage() {
   const { subjects, sessions, totalMinutes, isLoading, startSession, endSession, activeSession,
@@ -19,20 +18,28 @@ export default function StudiesPage() {
   const [newSubjectColor, setNewSubjectColor] = useState('#6366f1')
 
   const handleStartSession = async (subjectId: string) => {
-    await startSession(subjectId)
+    try {
+      await startSession(subjectId)
+    } catch {
+      // Toast is handled by the hook.
+    }
   }
 
   const handleCreateSubject = async () => {
     if (!newSubjectName.trim()) return
-    await createSubject({ name: newSubjectName.trim(), color: newSubjectColor })
-    setNewSubjectName('')
-    setShowCreateSubject(false)
+    try {
+      await createSubject({ name: newSubjectName.trim(), color: newSubjectColor })
+      setNewSubjectName('')
+      setShowCreateSubject(false)
+    } catch {
+      // Toast is handled by the hook.
+    }
   }
 
   const todaySessions = sessions.filter(s =>
     s.sessionDate === format(new Date(), 'yyyy-MM-dd')
   )
-  const todayMinutes = todaySessions.reduce((sum, s) => sum + s.durationMins, 0)
+  const todayMinutes = todaySessions.reduce((sum, s) => sum + (Number.isFinite(s.durationMins) ? s.durationMins : 0), 0)
 
   return (
     <div className="flex h-[calc(100vh-56px)]">
@@ -70,7 +77,9 @@ export default function StudiesPage() {
             <div className="p-3 space-y-2">
               <input autoFocus value={newSubjectName}
                 onChange={e => setNewSubjectName(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleCreateSubject()}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') void handleCreateSubject()
+                }}
                 placeholder="Nome da matéria..." className="input-base text-xs" />
               <div className="flex gap-1.5">
                 {ACCENT_COLORS.slice(0, 6).map(c => (
@@ -81,7 +90,7 @@ export default function StudiesPage() {
               </div>
               <div className="flex gap-2">
                 <Button size="xs" variant="ghost" onClick={() => setShowCreateSubject(false)} className="flex-1">Cancelar</Button>
-                <Button size="xs" onClick={handleCreateSubject} disabled={!newSubjectName.trim()} className="flex-1">Criar</Button>
+              <Button size="xs" onClick={() => void handleCreateSubject()} disabled={!newSubjectName.trim()} className="flex-1">Criar</Button>
               </div>
             </div>
           </motion.div>
@@ -121,7 +130,7 @@ export default function StudiesPage() {
                 {subjects.find(s => s.id === activeSession.subjectId)?.name}
               </span>
             </div>
-            <Button size="sm" variant="danger" onClick={endSession}>
+            <Button size="sm" variant="danger" onClick={() => void endSession()}>
               <Square className="size-3.5 fill-current" /> Encerrar
             </Button>
           </motion.div>
@@ -139,7 +148,7 @@ export default function StudiesPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                 {(selectedSubject ? subjects.filter(s => s.id === selectedSubject) : subjects).map((subject, i) => {
                   const subjectSessions = sessions.filter(s => s.subjectId === subject.id)
-                  const subjectMins = subjectSessions.reduce((sum, s) => sum + s.durationMins, 0)
+                  const subjectMins = subjectSessions.reduce((sum, s) => sum + (Number.isFinite(s.durationMins) ? s.durationMins : 0), 0)
                   const isActive = activeSession?.subjectId === subject.id
 
                   return (
@@ -160,7 +169,7 @@ export default function StudiesPage() {
                         </div>
                         <Button size="xs"
                           variant={isActive ? 'danger' : 'secondary'}
-                          onClick={() => isActive ? endSession() : handleStartSession(subject.id)}
+                          onClick={() => isActive ? void endSession() : void handleStartSession(subject.id)}
                           loading={false}>
                           {isActive
                             ? <><Square className="size-3 fill-current" /> Parar</>
@@ -173,11 +182,11 @@ export default function StudiesPage() {
                         <div className="ml-3 mt-3">
                           <div className="flex justify-between text-xs mb-1">
                             <span className="text-foreground-subtle">Meta: {subject.goalHours}h</span>
-                            <span className="font-medium">{Math.round(subjectMins / 60 / subject.goalHours * 100)}%</span>
+                            <span className="font-medium">{Math.round(clamp(subjectMins / 60 / subject.goalHours * 100))}%</span>
                           </div>
                           <div className="progress-bar">
                             <div className="progress-fill"
-                              style={{ width: `${Math.min(subjectMins / 60 / subject.goalHours * 100, 100)}%`, background: subject.color }} />
+                              style={{ width: `${clamp(subjectMins / 60 / subject.goalHours * 100)}%`, background: subject.color }} />
                           </div>
                         </div>
                       )}
@@ -201,7 +210,7 @@ export default function StudiesPage() {
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium truncate">{subject?.name ?? 'Matéria'}</p>
                           <p className="text-xs text-foreground-subtle">
-                            {format(new Date(session.sessionDate), "d 'de' MMMM", { locale: ptBR })}
+                            {formatDate(`${session.sessionDate}T12:00:00`, "d 'de' MMMM")}
                           </p>
                         </div>
                         <div className="flex items-center gap-1 text-xs font-medium text-foreground-muted">

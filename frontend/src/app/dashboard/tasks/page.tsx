@@ -1,10 +1,10 @@
 'use client'
 import { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { useTasks, useProjects } from '@/hooks/useTasks'
+import { motion } from 'framer-motion'
+import { useTasks } from '@/hooks/useTasks'
 import { EmptyState, SkeletonList } from '@/components/ui/Skeleton'
 import { Button } from '@/components/ui/Button'
-import { CheckSquare, Plus, Circle, CheckCircle2, Flag, Calendar } from 'lucide-react'
+import { CheckSquare, Plus, Circle, CheckCircle2, Calendar } from 'lucide-react'
 import { getPriorityConfig, formatDateRelative, cn } from '@/lib/utils'
 import type { Task } from '@/lib/api/client'
 import { toast } from 'sonner'
@@ -12,7 +12,6 @@ import { toast } from 'sonner'
 export default function TasksPage() {
   const [createTitle, setCreateTitle] = useState('')
   const { tasks, isLoading, createTask, toggleTask, isCreating } = useTasks()
-  const { projects } = useProjects()
 
   const done     = tasks.filter(t => t.status === 'DONE')
   const pending  = tasks.filter(t => t.status !== 'DONE')
@@ -20,9 +19,13 @@ export default function TasksPage() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!createTitle.trim()) return
-    await createTask({ title: createTitle.trim() })
-    setCreateTitle('')
-    toast.success('Tarefa criada!')
+    try {
+      await createTask({ title: createTitle.trim() })
+      setCreateTitle('')
+      toast.success('Tarefa criada!')
+    } catch {
+      // Toast is handled by the hook.
+    }
   }
 
   return (
@@ -45,11 +48,11 @@ export default function TasksPage() {
       {isLoading ? <SkeletonList count={6}/> :
        tasks.length === 0 ? <EmptyState icon={CheckSquare} title="Nenhuma tarefa" description="Crie sua primeira tarefa acima"/> :
       <div className="space-y-1">
-        {pending.map((task,i) => <TaskRow key={task.id} task={task} onToggle={()=>toggleTask(task.id)} delay={i*0.03}/>)}
+        {pending.map((task,i) => <TaskRow key={task.id} task={task} onToggle={()=>void toggleTask(task.id).catch(() => undefined)} delay={i*0.03}/>)}
         {done.length > 0 && (
           <>
             <p className="text-2xs font-medium text-foreground-subtle uppercase tracking-wider pt-3 pb-1">Concluídas</p>
-            {done.slice(0,5).map(task => <TaskRow key={task.id} task={task} onToggle={()=>toggleTask(task.id)}/>)}
+            {done.slice(0,5).map(task => <TaskRow key={task.id} task={task} onToggle={()=>void toggleTask(task.id).catch(() => undefined)}/>)}
           </>
         )}
       </div>}

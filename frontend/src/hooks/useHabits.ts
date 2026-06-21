@@ -1,7 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { habitsApi, type Habit, type CreateHabitRequest } from '@/lib/api/client'
+import { habitsApi, type Habit, type HabitCompletion, type CreateHabitRequest } from '@/lib/api/client'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
+import { asArray } from '@/lib/utils'
 
 export const habitKeys = {
   all: ['habits'] as const,
@@ -15,8 +16,8 @@ export function useHabits() {
   const qc = useQueryClient()
   const today = format(new Date(), 'yyyy-MM-dd')
 
-  const habitsQ = useQuery({ queryKey: habitKeys.list(), queryFn: habitsApi.getAll, staleTime: 60_000 })
-  const todayQ  = useQuery({ queryKey: habitKeys.today(), queryFn: habitsApi.getTodayCompletions, staleTime: 30_000 })
+  const habitsQ = useQuery({ queryKey: habitKeys.list(), queryFn: habitsApi.getAll, staleTime: 60_000, select: data => asArray<Habit>(data) })
+  const todayQ  = useQuery({ queryKey: habitKeys.today(), queryFn: habitsApi.getTodayCompletions, staleTime: 30_000, select: data => asArray<string>(data) })
 
   const completeMut = useMutation({
     mutationFn: ({ id, value, note }: { id: string; value?: number; note?: string }) => habitsApi.complete(id, { value, note }),
@@ -26,7 +27,7 @@ export function useHabits() {
       qc.setQueryData<string[]>(habitKeys.today(), old => old?.includes(id) ? old : [...(old ?? []), id])
       return { prev }
     },
-    onError: (_, __, ctx) => { if (ctx?.prev) qc.setQueryData(habitKeys.today(), ctx.prev) },
+    onError: (_, __, ctx) => { if (ctx?.prev) qc.setQueryData(habitKeys.today(), ctx.prev); toast.error('Falha ao atualizar hábito') },
     onSettled: (_, __, { id }) => { qc.invalidateQueries({ queryKey: habitKeys.today() }); qc.invalidateQueries({ queryKey: habitKeys.streak(id) }) },
   })
 
@@ -37,7 +38,7 @@ export function useHabits() {
       qc.setQueryData<string[]>(habitKeys.today(), old => old?.filter(x => x !== id))
       return { prev }
     },
-    onError: (_, __, ctx) => { if (ctx?.prev) qc.setQueryData(habitKeys.today(), ctx.prev) },
+    onError: (_, __, ctx) => { if (ctx?.prev) qc.setQueryData(habitKeys.today(), ctx.prev); toast.error('Falha ao atualizar hábito') },
     onSettled: () => qc.invalidateQueries({ queryKey: habitKeys.today() }),
   })
 
@@ -50,6 +51,7 @@ export function useHabits() {
   const deleteMut = useMutation({
     mutationFn: (id: string) => habitsApi.delete(id),
     onSuccess: (_, id) => { qc.setQueryData<Habit[]>(habitKeys.list(), old => old?.filter(h => h.id !== id)); toast.success('Hábito arquivado') },
+    onError: () => toast.error('Falha ao arquivar hábito'),
   })
 
   return {
@@ -64,7 +66,13 @@ export function useHabits() {
 }
 
 export function useHabitCompletions(id: string, from: string, to: string) {
-  return useQuery({ queryKey: habitKeys.completions(id, from, to), queryFn: () => habitsApi.getCompletions(id, from, to), enabled: !!id, staleTime: 5 * 60_000 })
+  return useQuery({
+    queryKey: habitKeys.completions(id, from, to),
+    queryFn: () => habitsApi.getCompletions(id, from, to),
+    enabled: !!id,
+    staleTime: 5 * 60_000,
+    select: data => asArray<HabitCompletion>(data),
+  })
 }
 
 export function useHabitStreak(id: string) {

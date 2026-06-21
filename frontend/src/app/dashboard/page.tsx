@@ -4,9 +4,9 @@ import { useDashboard } from '@/hooks/useDashboard'
 import { CheckSquare, Flame, Target, Timer, TrendingUp, BookOpen, Trophy, Clock } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { SkeletonCard } from '@/components/ui/Skeleton'
-import { cn, formatDuration } from '@/lib/utils'
+import { clamp, cn, formatDuration } from '@/lib/utils'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-import { format } from 'date-fns'; import { ptBR } from 'date-fns/locale'
+import { format, isValid } from 'date-fns'; import { ptBR } from 'date-fns/locale'
 
 const fade = { initial: { opacity: 0, y: 12 }, animate: { opacity: 1, y: 0, transition: { duration: 0.3 } } }
 const stagger = { animate: { transition: { staggerChildren: 0.06 } } }
@@ -67,9 +67,9 @@ export default function DashboardPage() {
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(220,13%,16%)" vertical={false}/>
-              <XAxis dataKey="date" tick={{fontSize:11,fill:'hsl(220,7%,45%)'}} tickLine={false} axisLine={false} tickFormatter={v=>format(new Date(v),'EEE',{locale:ptBR})}/>
+              <XAxis dataKey="date" tick={{fontSize:11,fill:'hsl(220,7%,45%)'}} tickLine={false} axisLine={false} tickFormatter={formatChartDate}/>
               <YAxis hide domain={[0,100]}/>
-              <Tooltip contentStyle={{backgroundColor:'hsl(220,14%,10%)',border:'1px solid hsl(220,13%,16%)',borderRadius:'8px',fontSize:'12px'}} formatter={(v:number)=>[`${Math.round(v)}/100`,'Score']}/>
+              <Tooltip contentStyle={{backgroundColor:'hsl(220,14%,10%)',border:'1px solid hsl(220,13%,16%)',borderRadius:'8px',fontSize:'12px'}} formatter={(v:number)=>[`${Math.round(clamp(v))}/100`,'Score']}/>
               <Area type="monotone" dataKey="productivityScore" stroke="hsl(239,84%,67%)" strokeWidth={2} fill="url(#g)" dot={false} activeDot={{r:4}}/>
             </AreaChart>
           </ResponsiveContainer>
@@ -81,7 +81,7 @@ export default function DashboardPage() {
             <span className="text-xs text-foreground-muted">{completed}/{total}</span>
           </div>
           <div className="progress-bar mb-4">
-            <motion.div className="progress-fill" initial={{width:0}} animate={{width:`${total>0?Math.round(completed/total*100):0}%`}} transition={{duration:0.8}}/>
+            <motion.div className="progress-fill" initial={{width:0}} animate={{width:`${total>0?Math.round(clamp(completed/total*100)):0}%`}} transition={{duration:0.8}}/>
           </div>
           <div className="space-y-1">
             {(data?.todayTasks ?? []).slice(0,6).map(task => (
@@ -96,4 +96,9 @@ export default function DashboardPage() {
       </div>
     </div>
   )
+}
+
+function formatChartDate(value: unknown) {
+  const date = new Date(String(value))
+  return isValid(date) ? format(date, 'EEE', { locale: ptBR }) : ''
 }

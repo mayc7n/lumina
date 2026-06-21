@@ -1,17 +1,13 @@
 'use client'
 
-import { useState } from 'react'
-import { motion } from 'framer-motion'
 import { useHabitStreak } from '@/hooks/useHabits'
-import { X, Flame, Trophy, Calendar, Edit2, Trash2, Check } from 'lucide-react'
+import { X, Flame, Trophy, Trash2, Check } from 'lucide-react'
 import { AreaChart, Area, XAxis, ResponsiveContainer, Tooltip } from 'recharts'
-import { format, subDays, eachDayOfInterval } from 'date-fns'
+import { format, subDays, eachDayOfInterval, isValid } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { useHabitCompletions, useHabits } from '@/hooks/useHabits'
 import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/Button'
 import type { Habit } from '@/lib/api/client'
-import { toast } from 'sonner'
 
 interface HabitDetailProps {
   habit: Habit
@@ -41,9 +37,12 @@ export function HabitDetail({ habit, onClose }: HabitDetailProps) {
   const last7Rate = Math.round(last7Completed / 7 * 100)
 
   const handleDelete = async () => {
-    await deleteHabit(habit.id)
-    onClose()
-    toast.success('Hábito arquivado')
+    try {
+      await deleteHabit(habit.id)
+      onClose()
+    } catch {
+      // Toast is handled by the hook.
+    }
   }
 
   return (
@@ -160,11 +159,16 @@ export function HabitDetail({ habit, onClose }: HabitDetailProps) {
           <div className="flex items-center justify-between">
             <span className="text-foreground-muted">Iniciado em</span>
             <span className="font-medium">
-              {format(new Date(habit.startDate), "d 'de' MMMM 'de' yyyy", { locale: ptBR })}
+              {formatStartDate(habit.startDate)}
             </span>
           </div>
         </div>
       </div>
     </div>
   )
+}
+
+function formatStartDate(value: string) {
+  const date = new Date(value)
+  return isValid(date) ? format(date, "d 'de' MMMM 'de' yyyy", { locale: ptBR }) : 'Sem data'
 }

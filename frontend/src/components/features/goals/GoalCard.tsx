@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion'
 import { ChevronRight, CheckCircle2, Clock, Flag } from 'lucide-react'
 import { IconRenderer, CATEGORY_COLORS } from '@/components/ui/Icons'
-import { cn, formatDate } from '@/lib/utils'
+import { clamp, cn, formatDate } from '@/lib/utils'
 import type { Goal } from '@/lib/api/client'
 
 interface GoalCardProps {
@@ -25,7 +25,7 @@ const PERIOD_LABELS: Record<string, string> = {
 
 export function GoalCard({ goal, onSelect }: GoalCardProps) {
   const status = STATUS_CONFIG[goal.status as keyof typeof STATUS_CONFIG] ?? STATUS_CONFIG.ACTIVE
-  const pct = Math.min(Math.round(goal.progressPct), 100)
+  const pct = Math.round(clamp(goal.progressPct))
   const isCompleted = goal.status === 'COMPLETED'
   const accentColor = goal.color ?? '#8b5cf6'
 

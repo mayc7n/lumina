@@ -1,16 +1,19 @@
 import { clsx, type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
-import { format, formatDistanceToNow, isToday, isYesterday, isTomorrow } from 'date-fns'
+import { format, formatDistanceToNow, isToday, isValid, isYesterday, isTomorrow } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
 export function cn(...inputs: ClassValue[]) { return twMerge(clsx(inputs)) }
 
 export function formatDate(date: string | Date, pattern = 'dd/MM/yyyy') {
-  return format(new Date(date), pattern, { locale: ptBR })
+  const parsed = new Date(date)
+  if (!isValid(parsed)) return 'Data inválida'
+  return format(parsed, pattern, { locale: ptBR })
 }
 
 export function formatDateRelative(date: string | Date): string {
   const d = new Date(date)
+  if (!isValid(d)) return 'Sem data'
   if (isToday(d)) return 'Hoje'
   if (isYesterday(d)) return 'Ontem'
   if (isTomorrow(d)) return 'Amanhã'
@@ -18,10 +21,20 @@ export function formatDateRelative(date: string | Date): string {
 }
 
 export function formatDuration(minutes: number): string {
-  if (!minutes) return '0m'
-  if (minutes < 60) return `${minutes}m`
-  const h = Math.floor(minutes / 60), m = minutes % 60
+  const safeMinutes = Number.isFinite(minutes) ? Math.max(0, Math.round(minutes)) : 0
+  if (!safeMinutes) return '0m'
+  if (safeMinutes < 60) return `${safeMinutes}m`
+  const h = Math.floor(safeMinutes / 60), m = safeMinutes % 60
   return m === 0 ? `${h}h` : `${h}h ${m}m`
+}
+
+export function clamp(value: number, min = 0, max = 100) {
+  if (!Number.isFinite(value)) return min
+  return Math.min(max, Math.max(min, value))
+}
+
+export function asArray<T>(value: T[] | unknown): T[] {
+  return Array.isArray(value) ? value : []
 }
 
 export function getInitials(name: string): string {

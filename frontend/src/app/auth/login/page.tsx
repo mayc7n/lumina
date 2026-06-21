@@ -74,7 +74,9 @@ export default function LoginPage() {
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <label htmlFor="password" className="text-sm font-medium">Senha</label>
-              <span className="text-xs text-foreground-subtle">Mínimo de 8 caracteres</span>
+              <Link href="/auth/forgot-password" className="text-xs font-medium text-brand hover:underline">
+                Esqueci minha senha
+              </Link>
             </div>
             <div className="relative">
               <LockKeyhole className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-foreground-subtle" />

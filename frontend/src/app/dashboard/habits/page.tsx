@@ -8,6 +8,7 @@ import { HabitDetail } from '@/components/features/habits/HabitDetail'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { Button } from '@/components/ui/Button'
 import { useHabits } from '@/hooks/useHabits'
+import { clamp } from '@/lib/utils'
 import type { Habit } from '@/lib/api/client'
 
 const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#f97316', '#10b981', '#06b6d4']
@@ -28,17 +29,21 @@ export default function HabitsPage() {
   async function submit(event: FormEvent) {
     event.preventDefault()
     if (!name.trim()) return
-    await createHabit({
-      name: name.trim(),
-      description: description.trim() || undefined,
-      color,
-      frequency,
-      habitType: 'BUILD',
-      startDate: new Date().toISOString().slice(0, 10),
-    })
-    setName('')
-    setDescription('')
-    setCreating(false)
+    try {
+      await createHabit({
+        name: name.trim(),
+        description: description.trim() || undefined,
+        color,
+        frequency,
+        habitType: 'BUILD',
+        startDate: new Date().toISOString().slice(0, 10),
+      })
+      setName('')
+      setDescription('')
+      setCreating(false)
+    } catch {
+      // Toast is handled by the hook.
+    }
   }
 
   return (
@@ -66,13 +71,13 @@ export default function HabitsPage() {
             <div className="mb-2 flex items-center justify-between text-xs">
               <span className="font-medium text-foreground-muted">Progresso de hoje</span>
               <span className="font-semibold tabular-nums">
-                {habits.length ? Math.round(completed / habits.length * 100) : 0}%
+                {habits.length ? Math.round(clamp(completed / habits.length * 100)) : 0}%
               </span>
             </div>
             <div className="progress-bar">
               <motion.div
                 className="progress-fill bg-orange-500"
-                animate={{ width: `${habits.length ? completed / habits.length * 100 : 0}%` }}
+                animate={{ width: `${habits.length ? clamp(completed / habits.length * 100) : 0}%` }}
               />
             </div>
           </div>
@@ -99,7 +104,10 @@ export default function HabitsPage() {
                     key={habit.id}
                     habit={habit}
                     isCompleted={isCompleted}
-                    onToggle={() => isCompleted ? uncompleteHabit(habit.id) : completeHabit(habit.id)}
+                    onToggle={() => {
+                      const action = isCompleted ? uncompleteHabit(habit.id) : completeHabit(habit.id)
+                      void action.catch(() => undefined)
+                    }}
                     onSelect={() => setSelected(habit)}
                   />
                 )

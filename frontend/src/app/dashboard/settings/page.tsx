@@ -1,15 +1,15 @@
 'use client'
 
 import { FormEvent, useEffect, useState } from 'react'
-import { Bell, Database, Settings, User } from 'lucide-react'
+import { Bell, CreditCard, Database, Settings, ShieldCheck, User } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
-import { DataSection, NotificationsSection } from '@/components/features/settings/OtherSections'
+import { BillingSection, DataSection, NotificationsSection, SecuritySection } from '@/components/features/settings/OtherSections'
 import { usersApi } from '@/lib/api/client'
 import { useAuthStore } from '@/store/authStore'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 
-type Section = 'profile' | 'notifications' | 'data'
+type Section = 'profile' | 'security' | 'notifications' | 'billing' | 'data'
 
 export default function SettingsPage() {
   const { user, updateUser } = useAuthStore()
@@ -41,7 +41,9 @@ export default function SettingsPage() {
 
   const sections = [
     { id: 'profile' as const, label: 'Perfil', icon: User },
+    { id: 'security' as const, label: 'Segurança', icon: ShieldCheck },
     { id: 'notifications' as const, label: 'Notificações', icon: Bell },
+    { id: 'billing' as const, label: 'Plano', icon: CreditCard },
     { id: 'data' as const, label: 'Dados e privacidade', icon: Database },
   ]
 
@@ -71,7 +73,9 @@ export default function SettingsPage() {
               </div>
             </form>
           )}
+          {section === 'security' && <SecuritySection />}
           {section === 'notifications' && <NotificationsSection />}
+          {section === 'billing' && <BillingSection />}
           {section === 'data' && <DataSection />}
         </div>
       </main>

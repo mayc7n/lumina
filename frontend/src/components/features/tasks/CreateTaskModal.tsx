@@ -17,7 +17,10 @@ export function CreateTaskModal({ open, onClose, defaultDate }: CreateTaskModalP
   const { createTask, isCreating } = useTasks()
 
   useEffect(() => {
-    if (open) setDueDate(defaultDate ?? '')
+    if (open) {
+      setDueDate(defaultDate ?? '')
+      setTitle('')
+    }
   }, [defaultDate, open])
 
   if (!open) return null
@@ -25,9 +28,13 @@ export function CreateTaskModal({ open, onClose, defaultDate }: CreateTaskModalP
   const submit = async (event: React.FormEvent) => {
     event.preventDefault()
     if (!title.trim()) return
-    await createTask({ title: title.trim(), dueDate: dueDate || undefined })
-    setTitle('')
-    onClose()
+    try {
+      await createTask({ title: title.trim(), dueDate: dueDate || undefined })
+      setTitle('')
+      onClose()
+    } catch {
+      // Toast is handled by the hook.
+    }
   }
 
   return (

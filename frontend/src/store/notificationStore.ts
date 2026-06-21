@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import { notificationsApi, type Notification } from '@/lib/api/client'
+import { asArray } from '@/lib/utils'
 
 interface NotificationStore {
   notifications: Notification[]; unreadCount: number; isLoading: boolean
@@ -17,7 +18,7 @@ export const useNotificationStore = create<NotificationStore>()(
     fetchNotifications: async () => {
       set(s => { s.isLoading = true })
       try {
-        const notifications = await notificationsApi.getAll()
+        const notifications = asArray<Notification>(await notificationsApi.getAll())
         set(s => { s.notifications = notifications; s.unreadCount = notifications.filter(n => !n.isRead).length; s.isLoading = false })
       } catch { set(s => { s.isLoading = false }) }
     },

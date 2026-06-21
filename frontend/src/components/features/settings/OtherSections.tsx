@@ -1,13 +1,15 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { useAuthStore } from '@/store/authStore'
-import { usersApi } from '@/lib/api/client'
+import { authApi, usersApi, type UserSession } from '@/lib/api/client'
 import { Button } from '@/components/ui/Button'
 import {
   CreditCard, Check, Zap, Shield, Trash2,
-  Download, AlertTriangle, Bell, BellOff, Loader2
+  Download, AlertTriangle, Bell, BellOff, Loader2, KeyRound,
+  MonitorSmartphone, RefreshCw, ShieldCheck
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
@@ -100,7 +102,7 @@ export function BillingSection() {
                 size="sm" className="w-full"
                 onClick={() => {
                   if (plan.id === 'PRO') {
-                    window.location.href = `${process.env.NEXT_PUBLIC_APP_URL}/billing/upgrade`
+                    window.location.href = `${process.env.NEXT_PUBLIC_APP_URL ?? window.location.origin}/billing/upgrade`
                   }
                 }}
               >
@@ -166,6 +168,8 @@ export function NotificationsSection() {
     try {
       await usersApi.updatePreferences({ notificationSettings: settings })
       toast.success('Notificações atualizadas!')
+    } catch {
+      toast.error('Não foi possível salvar as preferências')
     } finally {
       setSaving(false)
     }
@@ -225,6 +229,224 @@ export function NotificationsSection() {
       <Button onClick={handleSave} size="sm" loading={saving} disabled={loading}>Salvar preferências</Button>
     </div>
   )
+}
+
+// ===================================================================
+// SecuritySection
+// ===================================================================
+
+export function SecuritySection() {
+  const { user } = useAuthStore()
+  const [sessions, setSessions] = useState<UserSession[]>([])
+  const [loadingSessions, setLoadingSessions] = useState(true)
+  const [revokingId, setRevokingId] = useState('')
+  const [twoFactorSetup, setTwoFactorSetup] = useState<{ secret: string; qrCodeUrl: string } | null>(null)
+  const [twoFactorCode, setTwoFactorCode] = useState('')
+  const [twoFactorLoading, setTwoFactorLoading] = useState(false)
+
+  useEffect(() => {
+    let active = true
+    setLoadingSessions(true)
+    authApi.getSessions()
+      .then(data => { if (active) setSessions(Array.isArray(data) ? data : []) })
+      .catch(() => toast.error('Não foi possível carregar as sessões'))
+      .finally(() => { if (active) setLoadingSessions(false) })
+    return () => { active = false }
+  }, [])
+
+  async function refreshSessions() {
+    setLoadingSessions(true)
+    try {
+      const data = await authApi.getSessions()
+      setSessions(Array.isArray(data) ? data : [])
+    } catch {
+      toast.error('Não foi possível atualizar as sessões')
+    } finally {
+      setLoadingSessions(false)
+    }
+  }
+
+  async function revokeSession(id: string) {
+    setRevokingId(id)
+    try {
+      await authApi.revokeSession(id)
+      setSessions(current => current.filter(session => session.id !== id))
+      toast.success('Sessão revogada')
+    } catch {
+      toast.error('Não foi possível revogar a sessão')
+    } finally {
+      setRevokingId('')
+    }
+  }
+
+  async function startTwoFactorSetup() {
+    setTwoFactorLoading(true)
+    try {
+      const setup = await authApi.enable2fa()
+      setTwoFactorSetup(setup)
+    } catch {
+      toast.error('Não foi possível iniciar a configuração de 2FA')
+    } finally {
+      setTwoFactorLoading(false)
+    }
+  }
+
+  async function confirmTwoFactor() {
+    if (twoFactorCode.trim().length < 6) return
+    setTwoFactorLoading(true)
+    try {
+      await authApi.confirm2fa(twoFactorCode.trim())
+      setTwoFactorSetup(null)
+      setTwoFactorCode('')
+      toast.success('Autenticação em duas etapas ativada')
+    } catch {
+      toast.error('Código inválido ou expirado')
+    } finally {
+      setTwoFactorLoading(false)
+    }
+  }
+
+  return (
+    <div className="space-y-8">
+      <div>
+        <h2 className="text-lg font-semibold">Segurança</h2>
+        <p className="mt-1 text-sm text-foreground-muted">
+          Proteja sua conta, revise acessos e gerencie métodos de segurança.
+        </p>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="card p-5">
+          <div className="mb-4 flex items-start gap-3">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-brand/10 text-brand">
+              <KeyRound className="size-4" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold">Senha</h3>
+              <p className="mt-1 text-xs leading-5 text-foreground-muted">
+                Redefina sua senha usando um link seguro enviado para seu e-mail.
+              </p>
+            </div>
+          </div>
+          <Link href="/auth/forgot-password" className="btn-secondary inline-flex h-8 items-center justify-center rounded-lg px-3 text-xs font-medium">
+            Redefinir senha
+          </Link>
+        </div>
+
+        <div className="card p-5">
+          <div className="mb-4 flex items-start gap-3">
+            <div className={cn('flex size-9 shrink-0 items-center justify-center rounded-lg', user?.twoFactorEnabled ? 'bg-success-muted text-success' : 'bg-background-overlay text-foreground-muted')}>
+              <ShieldCheck className="size-4" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold">Autenticação em duas etapas</h3>
+              <p className="mt-1 text-xs leading-5 text-foreground-muted">
+                {user?.twoFactorEnabled
+                  ? '2FA está ativado para sua conta.'
+                  : 'Adicione uma camada extra de proteção ao entrar.'}
+              </p>
+            </div>
+          </div>
+
+          {user?.twoFactorEnabled ? (
+            <span className="badge bg-success-muted text-success text-xs">Ativado</span>
+          ) : twoFactorSetup ? (
+            <div className="space-y-3">
+              {twoFactorSetup.qrCodeUrl && (
+                <img src={twoFactorSetup.qrCodeUrl} alt="QR Code para configurar 2FA" className="size-36 rounded-lg border border-border bg-white p-2" />
+              )}
+              <div>
+                <p className="text-xs text-foreground-muted">Chave manual</p>
+                <code className="mt-1 block rounded-lg bg-background-overlay px-3 py-2 text-xs text-foreground">{twoFactorSetup.secret}</code>
+              </div>
+              <div className="flex gap-2">
+                <input
+                  inputMode="numeric"
+                  maxLength={8}
+                  value={twoFactorCode}
+                  onChange={event => setTwoFactorCode(event.target.value.replace(/\D/g, ''))}
+                  className="input-base h-8 min-w-0 flex-1 text-xs"
+                  placeholder="Código do app"
+                />
+                <Button size="sm" loading={twoFactorLoading} disabled={twoFactorCode.length < 6} onClick={confirmTwoFactor}>
+                  Confirmar
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <Button size="sm" variant="secondary" loading={twoFactorLoading} onClick={startTwoFactorSetup}>
+              Configurar 2FA
+            </Button>
+          )}
+        </div>
+      </div>
+
+      <div className="card p-5">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="flex size-9 items-center justify-center rounded-lg bg-background-overlay text-foreground-muted">
+              <MonitorSmartphone className="size-4" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold">Sessões ativas</h3>
+              <p className="text-xs text-foreground-muted">Revogue acessos que você não reconhece.</p>
+            </div>
+          </div>
+          <Button size="xs" variant="ghost" onClick={() => void refreshSessions()} loading={loadingSessions}>
+            <RefreshCw className="size-3.5" /> Atualizar
+          </Button>
+        </div>
+
+        {loadingSessions ? (
+          <div className="flex items-center gap-2 py-6 text-sm text-foreground-muted">
+            <Loader2 className="size-4 animate-spin" /> Carregando sessões...
+          </div>
+        ) : sessions.length === 0 ? (
+          <p className="rounded-xl bg-background-overlay px-4 py-6 text-center text-xs text-foreground-muted">
+            Nenhuma sessão registrada.
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {sessions.map(session => (
+              <div key={session.id} className="flex items-center gap-3 rounded-xl border border-border p-3">
+                <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-background-overlay">
+                  <MonitorSmartphone className="size-4 text-foreground-muted" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <p className="truncate text-sm font-medium">{session.deviceName || session.deviceType || 'Dispositivo'}</p>
+                    {session.current && <span className="badge bg-brand/10 text-brand text-2xs">Atual</span>}
+                  </div>
+                  <p className="mt-0.5 text-xs text-foreground-muted">
+                    {session.ipAddress ? `${session.ipAddress} · ` : ''}
+                    último uso {formatSessionDate(session.lastUsedAt)}
+                  </p>
+                </div>
+                {!session.current && (
+                  <Button
+                    size="xs"
+                    variant="ghost"
+                    loading={revokingId === session.id}
+                    onClick={() => void revokeSession(session.id)}
+                    className="text-danger hover:bg-danger-muted"
+                  >
+                    Revogar
+                  </Button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function formatSessionDate(value: string) {
+  const date = new Date(value)
+  return Number.isNaN(date.getTime())
+    ? 'desconhecido'
+    : date.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
 }
 
 // ===================================================================

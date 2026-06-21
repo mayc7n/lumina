@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { useJournal } from '@/hooks/useJournal'
 import type { JournalEntry } from '@/lib/api/client'
-import { cn } from '@/lib/utils'
+import { cn, formatDate } from '@/lib/utils'
 
 const MOODS = [
   { value: 'TERRIBLE', icon: '😞', label: 'Péssimo' },
@@ -41,22 +41,30 @@ export default function JournalPage() {
 
   async function save() {
     if (!content.trim()) return
-    if (selected) {
-      const updated = await updateEntry({ id: selected.id, data: { title, content, mood } })
-      setSelected(updated)
-    } else {
-      const created = await createEntry({
-        title: title.trim() || undefined, content: content.trim(), mood,
-        entryDate: new Date().toISOString().slice(0, 10),
-      })
-      setSelected(created)
+    try {
+      if (selected) {
+        const updated = await updateEntry({ id: selected.id, data: { title: title.trim() || undefined, content: content.trim(), mood } })
+        setSelected(updated)
+      } else {
+        const created = await createEntry({
+          title: title.trim() || undefined, content: content.trim(), mood,
+          entryDate: new Date().toISOString().slice(0, 10),
+        })
+        setSelected(created)
+      }
+    } catch {
+      // Toast is handled by the hook.
     }
   }
 
   async function remove() {
     if (!selected) return
-    await deleteEntry(selected.id)
-    newEntry()
+    try {
+      await deleteEntry(selected.id)
+      newEntry()
+    } catch {
+      // Toast is handled by the hook.
+    }
   }
 
   return (
@@ -85,7 +93,7 @@ export default function JournalPage() {
                 </div>
                 <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-foreground-muted">{entry.content}</p>
                 <div className="mt-2 flex items-center gap-1 text-2xs text-foreground-subtle">
-                  <Calendar className="size-3" /> {new Date(`${entry.entryDate}T12:00:00`).toLocaleDateString('pt-BR')}
+                  <Calendar className="size-3" /> {formatDate(`${entry.entryDate}T12:00:00`)}
                   <span className="ml-auto">{entry.wordCount} palavras</span>
                 </div>
               </button>
@@ -110,7 +118,7 @@ export default function JournalPage() {
               </div>
               {selected && (
                 <>
-                  <Button variant="ghost" size="sm" onClick={() => togglePin(selected.id)}>
+                  <Button variant="ghost" size="sm" onClick={() => void togglePin(selected.id).catch(() => undefined)}>
                     <Pin className={cn('size-4', selected.isPinned && 'fill-brand text-brand')} />
                   </Button>
                   <Button variant="ghost" size="sm" onClick={remove}><Trash2 className="size-4 text-danger" /></Button>

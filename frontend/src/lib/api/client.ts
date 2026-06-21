@@ -18,6 +18,10 @@ interface StoredAuth {
   }
 }
 
+interface ApiEnvelope<T> {
+  data?: T
+}
+
 const readStoredAuth = (): StoredAuth | null => {
   if (typeof window === 'undefined') return null
 
@@ -27,11 +31,27 @@ const readStoredAuth = (): StoredAuth | null => {
   try {
     const parsed: unknown = JSON.parse(raw)
     if (!parsed || typeof parsed !== 'object') throw new Error('Invalid auth storage')
-    return parsed as StoredAuth
+    const stored = parsed as StoredAuth
+    const accessToken = stored.state?.accessToken
+    const refreshToken = stored.state?.refreshToken
+    if (
+      accessToken != null && typeof accessToken !== 'string' ||
+      refreshToken != null && typeof refreshToken !== 'string'
+    ) {
+      throw new Error('Invalid auth tokens')
+    }
+    return stored
   } catch {
     localStorage.removeItem('lumina-auth')
     return null
   }
+}
+
+const unwrapApiData = <T>(payload: ApiEnvelope<T> | T): T => {
+  if (payload && typeof payload === 'object' && 'data' in payload) {
+    return (payload as ApiEnvelope<T>).data as T
+  }
+  return payload as T
 }
 
 const processQueue = (err: unknown, token: string | null = null) => {
@@ -48,7 +68,8 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
 })
 
 api.interceptors.response.use(r => r, async error => {
-  const orig = error.config as InternalAxiosRequestConfig & { _retry?: boolean }
+  const orig = error.config as (InternalAxiosRequestConfig & { _retry?: boolean }) | undefined
+  if (!orig) return Promise.reject(error)
   if (error.response?.status !== 401 || orig._retry) return Promise.reject(error)
   if (isRefreshing) return new Promise<string>((resolve, reject) => queue.push({ resolve, reject }))
     .then(t => { orig.headers.Authorization = `Bearer ${t}`; return api(orig) })
@@ -56,8 +77,9 @@ api.interceptors.response.use(r => r, async error => {
   try {
     const currentRefreshToken = useAuthStore.getState().refreshToken ?? readStoredAuth()?.state?.refreshToken
     if (!currentRefreshToken) throw new Error('No refresh token')
-    const res = await axios.post(`${API_URL}/auth/refresh`, { refreshToken: currentRefreshToken })
-    const { accessToken, refreshToken: nextRefreshToken } = res.data.data
+    const res = await axios.post<ApiEnvelope<AuthTokens> | AuthTokens>(`${API_URL}/auth/refresh`, { refreshToken: currentRefreshToken })
+    const { accessToken, refreshToken: nextRefreshToken } = unwrapApiData<AuthTokens>(res.data)
+    if (!accessToken || !nextRefreshToken) throw new Error('Invalid refresh response')
     useAuthStore.getState().setTokens(accessToken, nextRefreshToken)
     processQueue(null, accessToken)
     orig.headers.Authorization = `Bearer ${accessToken}`
@@ -71,19 +93,19 @@ api.interceptors.response.use(r => r, async error => {
 })
 
 export async function apiGet<T>(url: string, params?: Record<string, unknown>): Promise<T> {
-  const r = await api.get<{ data: T }>(url, { params }); return r.data.data
+  const r = await api.get<ApiEnvelope<T> | T>(url, { params }); return unwrapApiData<T>(r.data)
 }
 export async function apiPost<T>(url: string, data?: unknown): Promise<T> {
-  const r = await api.post<{ data: T }>(url, data); return r.data.data
+  const r = await api.post<ApiEnvelope<T> | T>(url, data); return unwrapApiData<T>(r.data)
 }
 export async function apiPut<T>(url: string, data?: unknown): Promise<T> {
-  const r = await api.put<{ data: T }>(url, data); return r.data.data
+  const r = await api.put<ApiEnvelope<T> | T>(url, data); return unwrapApiData<T>(r.data)
 }
 export async function apiPatch<T>(url: string, data?: unknown): Promise<T> {
-  const r = await api.patch<{ data: T }>(url, data); return r.data.data
+  const r = await api.patch<ApiEnvelope<T> | T>(url, data); return unwrapApiData<T>(r.data)
 }
 export async function apiDelete<T = void>(url: string): Promise<T> {
-  const r = await api.delete<{ data: T }>(url); return r.data.data
+  const r = await api.delete<ApiEnvelope<T> | T>(url); return unwrapApiData<T>(r.data)
 }
 
 // Resource APIs
@@ -104,7 +126,7 @@ export const authApi = {
 export const usersApi = {
   getMe: () => apiGet<User>('/users/me'),
   updateProfile: (d: Partial<User>) => apiPatch<User>('/users/me', d),
-  uploadAvatar: (file: File) => { const fd = new FormData(); fd.append('file', file); return api.patch<{ data: { avatarUrl: string } }>('/users/me/avatar', fd, { headers: { 'Content-Type': 'multipart/form-data' } }).then(r => r.data.data) },
+  uploadAvatar: (file: File) => { const fd = new FormData(); fd.append('file', file); return api.patch<ApiEnvelope<{ avatarUrl: string }> | { avatarUrl: string }>('/users/me/avatar', fd, { headers: { 'Content-Type': 'multipart/form-data' } }).then(r => unwrapApiData(r.data)) },
   getPreferences: () => apiGet<UserPreferences>('/users/me/preferences'),
   updatePreferences: (d: Record<string, unknown>) => apiPatch<UserPreferences>('/users/me/preferences', d),
   exportData: () => api.get('/users/me/export', { responseType: 'blob' }),

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiGet, apiPost } from '@/lib/api/client'
 import { toast } from 'sonner'
+import { asArray } from '@/lib/utils'
 
 export interface FeedItem {
   id: string
@@ -40,18 +41,21 @@ export function useSocial(searchQuery = '') {
     queryKey: socialKeys.feed,
     queryFn: () => apiGet<FeedItem[]>('/social/feed'),
     staleTime: 60_000,
+    select: data => asArray<FeedItem>(data),
   })
 
   const friendsQuery = useQuery({
     queryKey: socialKeys.friends,
     queryFn: () => apiGet<Friend[]>('/social/friends'),
     staleTime: 2 * 60_000,
+    select: data => asArray<Friend>(data),
   })
 
   const requestsQuery = useQuery({
     queryKey: socialKeys.requests,
     queryFn: () => apiGet<FriendRequest[]>('/social/friends/requests'),
     staleTime: 60_000,
+    select: data => asArray<FriendRequest>(data),
   })
 
   const searchQueryResult = useQuery({
@@ -59,6 +63,7 @@ export function useSocial(searchQuery = '') {
     queryFn: () => apiGet<Friend[]>('/social/users', { query: searchQuery }),
     enabled: searchQuery.trim().length >= 2,
     staleTime: 30_000,
+    select: data => asArray<Friend>(data),
   })
 
   const sendRequestMutation = useMutation({
@@ -77,6 +82,7 @@ export function useSocial(searchQuery = '') {
       queryClient.invalidateQueries({ queryKey: socialKeys.requests })
       toast.success('Amizade aceita!')
     },
+    onError: () => toast.error('Erro ao aceitar solicitação'),
   })
 
   return {

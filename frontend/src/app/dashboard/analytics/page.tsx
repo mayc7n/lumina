@@ -3,8 +3,8 @@
 import { useQuery } from '@tanstack/react-query'
 import { BarChart2, CheckSquare, Flame, Lightbulb, Timer, TrendingUp } from 'lucide-react'
 import { analyticsApi } from '@/lib/api/client'
-import { cn, formatDuration } from '@/lib/utils'
-import { format, subDays } from 'date-fns'
+import { clamp, cn, formatDuration } from '@/lib/utils'
+import { format, isValid, subDays } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import {
   Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer,
@@ -33,9 +33,9 @@ export default function AnalyticsPage() {
 
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           {[
-            { label: 'Score', value: `${data?.productivityScore ?? 0}/100`, icon: TrendingUp, color: 'text-brand' },
+            { label: 'Score', value: `${Math.round(clamp(data?.productivityScore ?? 0))}/100`, icon: TrendingUp, color: 'text-brand' },
             { label: 'Tarefas concluídas', value: data?.tasksCompleted ?? 0, icon: CheckSquare, color: 'text-success' },
-            { label: 'Consistência', value: `${data?.habitRate ?? 0}%`, icon: Flame, color: 'text-orange-500' },
+            { label: 'Consistência', value: `${Math.round(clamp(data?.habitRate ?? 0))}%`, icon: Flame, color: 'text-orange-500' },
             { label: 'Tempo de foco', value: formatDuration(data?.focusMins ?? 0), icon: Timer, color: 'text-purple-500' },
           ].map(item => (
             <div key={item.label} className="card p-4">
@@ -53,7 +53,7 @@ export default function AnalyticsPage() {
               <AreaChart data={data?.daily ?? []}>
                 <defs><linearGradient id="analytics-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#6366f1" stopOpacity={.3} /><stop offset="95%" stopColor="#6366f1" stopOpacity={0} /></linearGradient></defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(220,13%,16%)" vertical={false} />
-                <XAxis dataKey="date" tickFormatter={value => format(new Date(`${value}T12:00:00`), 'EEE', { locale: ptBR })} tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+                <XAxis dataKey="date" tickFormatter={value => formatChartDate(value)} tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                 <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                 <Tooltip contentStyle={{ background: 'hsl(220,14%,10%)', border: '1px solid hsl(220,13%,16%)', borderRadius: 8 }} />
                 <Area type="monotone" dataKey="productivityScore" stroke="#6366f1" strokeWidth={2} fill="url(#analytics-fill)" />
@@ -65,8 +65,8 @@ export default function AnalyticsPage() {
             <div className="space-y-4">
               {(data?.areaBalance ?? []).map(area => (
                 <div key={area.area}>
-                  <div className="mb-1.5 flex justify-between text-xs"><span className="text-foreground-muted">{area.area}</span><strong>{area.score}%</strong></div>
-                  <div className="progress-bar"><div className="progress-fill" style={{ width: `${area.score}%` }} /></div>
+                  <div className="mb-1.5 flex justify-between text-xs"><span className="text-foreground-muted">{area.area}</span><strong>{Math.round(clamp(area.score))}%</strong></div>
+                  <div className="progress-bar"><div className="progress-fill" style={{ width: `${clamp(area.score)}%` }} /></div>
                 </div>
               ))}
             </div>
@@ -102,4 +102,9 @@ export default function AnalyticsPage() {
       </div>
     </div>
   )
+}
+
+function formatChartDate(value: unknown) {
+  const date = new Date(`${String(value)}T12:00:00`)
+  return isValid(date) ? format(date, 'EEE', { locale: ptBR }) : ''
 }

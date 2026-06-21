@@ -5,7 +5,7 @@ import { motion } from 'framer-motion'
 import { Brain, Check, Clock3, Flame, Play, Square, Timer, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { useFocus } from '@/hooks/useFocus'
-import { cn, formatDuration } from '@/lib/utils'
+import { clamp, cn, formatDate, formatDuration } from '@/lib/utils'
 
 const MODES = [
   { id: 'POMODORO', label: 'Pomodoro', minutes: 25, icon: Timer, color: '#6366f1' },
@@ -26,17 +26,21 @@ export default function FocusPage() {
   }, [activeSession])
 
   const elapsedSeconds = activeSession
-    ? Math.max(0, Math.floor((now - new Date(activeSession.startedAt).getTime()) / 1000))
+    ? Math.max(0, Math.floor((now - safeTime(activeSession.startedAt)) / 1000))
     : 0
   const plannedSeconds = (activeSession?.plannedMins ?? mode.minutes) * 60
   const remaining = Math.max(0, plannedSeconds - elapsedSeconds)
-  const progress = Math.min(100, elapsedSeconds / plannedSeconds * 100)
+  const progress = plannedSeconds > 0 ? clamp(elapsedSeconds / plannedSeconds * 100) : 0
   const clock = `${String(Math.floor(remaining / 60)).padStart(2, '0')}:${String(remaining % 60).padStart(2, '0')}`
   const completedSessions = useMemo(() => sessions.filter(session => session.status === 'COMPLETED'), [sessions])
 
   async function begin() {
-    await startSession({ mode: mode.id, plannedMins: mode.minutes })
-    setNow(Date.now())
+    try {
+      await startSession({ mode: mode.id, plannedMins: mode.minutes })
+      setNow(Date.now())
+    } catch {
+      // Toast is handled by the hook.
+    }
   }
 
   return (
@@ -86,10 +90,10 @@ export default function FocusPage() {
               <div className="mt-8 flex gap-2">
                 {activeSession ? (
                   <>
-                    <Button onClick={() => completeSession({ id: activeSession.id, focusScore: 8 })}>
+                    <Button onClick={() => void completeSession({ id: activeSession.id, focusScore: 8 }).catch(() => undefined)}>
                       <Check className="size-4" /> Concluir
                     </Button>
-                    <Button variant="secondary" onClick={() => abandonSession(activeSession.id)}>
+                    <Button variant="secondary" onClick={() => void abandonSession(activeSession.id).catch(() => undefined)}>
                       <Square className="size-3.5 fill-current" /> Encerrar
                     </Button>
                   </>
@@ -133,7 +137,7 @@ export default function FocusPage() {
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="text-xs font-medium">{MODES.find(item => item.id === session.mode)?.label ?? session.mode}</p>
-                        <p className="text-2xs text-foreground-subtle">{new Date(session.startedAt).toLocaleDateString('pt-BR')}</p>
+                        <p className="text-2xs text-foreground-subtle">{formatDate(session.startedAt)}</p>
                       </div>
                       <span className="text-xs font-medium tabular-nums">{formatDuration(session.actualMins)}</span>
                     </div>
@@ -146,4 +150,9 @@ export default function FocusPage() {
       </div>
     </div>
   )
+}
+
+function safeTime(value: string) {
+  const time = new Date(value).getTime()
+  return Number.isNaN(time) ? Date.now() : time
 }
