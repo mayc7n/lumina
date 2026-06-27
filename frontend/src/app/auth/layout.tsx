@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { BarChart3, CheckCircle2, Sparkles, Target } from 'lucide-react'
+import { BarChart3, CheckCircle2, Clock3, Sparkles, Target } from 'lucide-react'
 
 const benefits = [
   {
@@ -24,11 +24,9 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
     <main className="min-h-screen bg-background lg:grid lg:grid-cols-[minmax(0,1.05fr)_minmax(480px,0.95fr)]">
       <section className="relative hidden overflow-hidden border-r border-border bg-background-elevated lg:flex lg:flex-col lg:justify-between lg:p-12 xl:p-16">
         <div className="pointer-events-none absolute inset-0 auth-grid opacity-60" />
-        <div className="pointer-events-none absolute -left-24 top-24 size-80 rounded-full bg-brand/10 blur-3xl" />
-        <div className="pointer-events-none absolute bottom-0 right-0 size-96 rounded-full bg-violet-500/10 blur-3xl" />
 
         <Link href="/" className="relative flex w-fit items-center gap-3">
-          <span className="flex size-9 items-center justify-center rounded-xl bg-brand text-white shadow-brand-sm">
+          <span className="flex size-9 items-center justify-center rounded-lg bg-brand text-white shadow-brand-sm">
             <Sparkles size={18} strokeWidth={2.5} />
           </span>
           <span className="text-lg font-semibold tracking-tight">Lumina</span>
@@ -56,6 +54,34 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
                   <h2 className="text-sm font-semibold">{title}</h2>
                   <p className="mt-1 text-sm leading-6 text-foreground-muted">{description}</p>
                 </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="relative rounded-xl border border-border bg-background/85 p-4 shadow-sm">
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-[0.16em] text-foreground-subtle">Hoje</p>
+              <p className="mt-1 text-sm font-semibold">Plano de execução</p>
+            </div>
+            <span className="rounded-md bg-success-muted px-2 py-1 text-xs font-medium text-success">
+              72%
+            </span>
+          </div>
+          <div className="space-y-3">
+            {[
+              { label: 'Revisar prioridades', meta: '09:00', done: true },
+              { label: 'Sessão de foco profundo', meta: '45 min', done: true },
+              { label: 'Check-in de metas', meta: '18:30', done: false },
+            ].map(item => (
+              <div key={item.label} className="flex items-center gap-3 rounded-lg border border-border bg-background-elevated px-3 py-2.5">
+                <CheckCircle2 size={16} className={item.done ? 'text-success' : 'text-foreground-subtle'} />
+                <span className="min-w-0 flex-1 truncate text-sm">{item.label}</span>
+                <span className="inline-flex items-center gap-1 text-xs text-foreground-muted">
+                  <Clock3 size={13} />
+                  {item.meta}
+                </span>
               </div>
             ))}
           </div>
