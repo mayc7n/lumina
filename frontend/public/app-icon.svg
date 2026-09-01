@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title description">
+  <title id="title">Lumina</title>
+  <desc id="description">Símbolo luminoso em forma de L sobre fundo escuro</desc>
+  <defs>
+    <linearGradient id="background" x1="64" y1="32" x2="448" y2="480" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#181F35"/>
+      <stop offset="1" stop-color="#090C14"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0" cy="0" r="1" gradientTransform="translate(262 254) rotate(90) scale(210)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#6366F1" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#6366F1" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#background)"/>
+  <circle cx="262" cy="254" r="210" fill="url(#glow)"/>
+  <path d="M156 142c0-15 12-27 27-27s27 12 27 27v183c0 11 9 20 20 20h115c15 0 27 12 27 27s-12 27-27 27H216c-33.1 0-60-26.9-60-60V142Z" fill="#818CF8"/>
+  <polygon points="332,122 339,142 359,149 339,156 332,176 325,156 305,149 325,142" fill="#E0E7FF"/>
+</svg>

@@ -9,8 +9,24 @@ import '@/styles/globals.css'
 
 export const metadata: Metadata = {
   title: { default: 'Lumina', template: '%s | Lumina' },
-  description: 'Your personal excellence platform.',
+  description: 'Produtividade, hábitos e evolução pessoal em um só lugar.',
+  applicationName: 'Lumina',
   manifest: '/manifest.json',
+  icons: {
+    icon: [
+      { url: '/app-icon.svg', type: 'image/svg+xml' },
+      { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+    ],
+    apple: [{ url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
+  },
+  appleWebApp: {
+    capable: true,
+    title: 'Lumina',
+    statusBarStyle: 'black-translucent',
+  },
+  formatDetection: {
+    telephone: false,
+  },
 }
 export const viewport: Viewport = {
   themeColor: [{ media: '(prefers-color-scheme: light)', color: '#ffffff' }, { media: '(prefers-color-scheme: dark)', color: '#0d1117' }],
