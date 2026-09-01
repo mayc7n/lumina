@@ -1,43 +1,35 @@
 # Lumina
 
-> Produtividade, hábitos e evolução pessoal em um só lugar.
+> Organize sua rotina. Evolua com clareza.
 
-Lumina é um app mobile-first para organizar tarefas, hábitos, metas, estudos e momentos de foco com uma experiência simples e consistente.
+Lumina é uma plataforma de produtividade pessoal que reúne tarefas, hábitos, metas, estudos e momentos de foco em uma experiência simples e consistente.
 
-## Plataformas
-
-- **Apple** — instalável no iPhone e iPad pelo Safari
-- **Android** — instalável pelo Chrome
-- **Web** — responsivo para desktop e tablet
-
-A versão atual é um web app instalável. A distribuição pela App Store e Google Play pode ser adicionada posteriormente sem alterar o produto principal.
-
-## Recursos
+## O produto
 
 - tarefas, projetos e calendário
-- hábitos, metas e conquistas
+- hábitos, metas e acompanhamento de progresso
 - sessões de foco e estudos
 - diário e biblioteca de leitura
-- analytics e evolução pessoal
-- recursos sociais
+- indicadores de evolução pessoal
+- conquistas e recursos sociais
 
-## Melhorias recentes
+## Próximo passo
 
-- autenticação server-side com cookies protegidos
-- senhas com BCrypt e tokens persistidos com hash
-- Row-Level Security e acessos mínimos no PostgreSQL
-- validação de entradas, consultas parametrizadas e uploads restritos
-- rate limiting, mitigação de abuso automatizado, HTTPS e headers de segurança
-- dependências e código analisados por Semgrep, OWASP e OSV
-- respostas da API limitadas e dados sensíveis protegidos
-- emojis substituídos por ícones profissionais
-- instalação mobile preparada para Apple e Android
+O Lumina está em desenvolvimento. A versão web atual é a base funcional usada para construir e validar o produto, mas não representa sua forma final.
+
+O objetivo é lançar o Lumina como aplicativo móvel para **iOS** e **Android**, com distribuição pela **App Store** e pelo **Google Play**. O foco futuro do projeto está na experiência mobile, não na permanência como aplicativo web.
+
+## Segurança
+
+O projeto utiliza autenticação server-side, cookies protegidos, senhas com BCrypt, isolamento de dados no PostgreSQL, validação de entradas, rate limiting e análise contínua de código e dependências.
+
+Os controles implementados e suas evidências estão em [docs/SECURITY-HARDENING.md](docs/SECURITY-HARDENING.md).
 
 ## Tecnologia
 
 Next.js 15, TypeScript, Java 21, Spring Boot 3.5, PostgreSQL 16, Redis e RabbitMQ.
 
-## Executar localmente
+## Desenvolvimento local
 
 ```bash
 cp .env.example .env
@@ -47,11 +39,8 @@ cd backend && ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
 cd ../frontend && npm install && npm run dev
 ```
 
-Frontend: `http://localhost:3000`
-
-API: `http://localhost:8080/api`
-
-Os controles implementados e suas evidências estão em [docs/SECURITY-HARDENING.md](docs/SECURITY-HARDENING.md).
+- Frontend: `http://localhost:3000`
+- API: `http://localhost:8080/api`
 
 ## Licença
 
