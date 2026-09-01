@@ -2,7 +2,7 @@
 set -eu
 
 if [ "$#" -ne 1 ]; then
-  echo "Uso: $0 backups/lumina-AAAAMMDDTHHMMSSZ.sql.gz"
+  echo "Uso: $0 backups/lumina-AAAAMMDDTHHMMSSZ.sql.gz.enc"
   exit 1
 fi
 
@@ -21,12 +21,19 @@ set -a
 . "$ENV_FILE"
 set +a
 
+if [ -z "${BACKUP_ENCRYPTION_PASSPHRASE:-}" ]; then
+  echo "Defina BACKUP_ENCRYPTION_PASSPHRASE para descriptografar o backup."
+  exit 1
+fi
+
 printf "Isto substituirá os dados atuais. Digite RESTAURAR para continuar: "
 read -r confirmation
 [ "$confirmation" = "RESTAURAR" ] || exit 1
 
 cd "$ROOT_DIR"
-gzip -dc "$BACKUP_FILE" | docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" exec -T postgres \
-  psql -v ON_ERROR_STOP=1 -U "${DB_USERNAME:-lumina}" "${DB_NAME:-lumina}"
+openssl enc -d -aes-256-cbc -pbkdf2 -pass env:BACKUP_ENCRYPTION_PASSPHRASE -in "$BACKUP_FILE" |
+  gzip -dc |
+  docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" exec -T postgres \
+  psql -v ON_ERROR_STOP=1 -U "${DB_MIGRATION_USERNAME:-lumina_owner}" "${DB_NAME:-lumina}"
 
 echo "Restauração concluída."

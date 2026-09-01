@@ -10,5 +10,7 @@ import java.util.UUID;
 
 public record CreateProjectRequest(
     @NotBlank @Size(max = 100) String name,
-    String description, String color, String icon
+    @Size(max = 500) String description,
+    @Size(max = 20) String color,
+    @Size(max = 50) String icon
 ) {}

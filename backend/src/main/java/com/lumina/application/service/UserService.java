@@ -2,6 +2,8 @@ package com.lumina.application.service;
 
 import com.lumina.api.dto.UserResponse;
 import com.lumina.api.dto.UserPreferencesResponse;
+import com.lumina.api.dto.UpdatePreferencesRequest;
+import com.lumina.api.dto.UpdateProfileRequest;
 import com.lumina.api.middleware.GlobalExceptionHandler.BusinessException;
 import com.lumina.api.middleware.GlobalExceptionHandler.ConflictException;
 import com.lumina.api.middleware.GlobalExceptionHandler.ResourceNotFoundException;
@@ -17,9 +19,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import java.math.BigDecimal;
+import java.time.DateTimeException;
+import java.time.ZoneId;
 import java.util.*;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -35,25 +37,27 @@ public class UserService {
     }
 
     @Transactional
-    public UserResponse updateProfile(UUID userId, Map<String, Object> values) {
+    public UserResponse updateProfile(UUID userId, UpdateProfileRequest request) {
         User user = getUser(userId);
-        if (values.get("displayName") instanceof String displayName) {
-            if (!StringUtils.hasText(displayName) || displayName.trim().length() > 100) {
-                throw validation("Nome de exibição inválido");
-            }
+        if (request.displayName() != null) {
+            String displayName = request.displayName();
+            if (!StringUtils.hasText(displayName)) throw validation("Nome de exibição inválido");
             user.setDisplayName(displayName.trim());
         }
-        if (values.get("username") instanceof String username) {
+        if (request.username() != null) {
+            String username = request.username();
             String normalized = username.trim().toLowerCase(Locale.ROOT);
-            if (!normalized.matches("^[a-z0-9_]{3,50}$")) throw validation("Username inválido");
             userRepository.findByUsernameAndDeletedAtIsNull(normalized)
                 .filter(existing -> !existing.getId().equals(userId))
                 .ifPresent(existing -> { throw new ConflictException("Este username já está em uso"); });
             user.setUsername(normalized);
         }
-        if (values.containsKey("bio")) user.setBio(trimToNull((String) values.get("bio")));
-        if (values.get("timezone") instanceof String timezone && StringUtils.hasText(timezone)) user.setTimezone(timezone.trim());
-        if (values.get("locale") instanceof String locale && StringUtils.hasText(locale)) user.setLocale(locale.trim());
+        if (request.bio() != null) user.setBio(trimToNull(request.bio()));
+        if (request.timezone() != null) {
+            try { user.setTimezone(ZoneId.of(request.timezone().trim()).getId()); }
+            catch (DateTimeException exception) { throw validation("Fuso horário inválido"); }
+        }
+        if (request.locale() != null) user.setLocale(request.locale());
         return UserResponse.from(user);
     }
 
@@ -65,21 +69,18 @@ public class UserService {
     }
 
     @Transactional
-    @SuppressWarnings("unchecked")
-    public UserPreferencesResponse updatePreferences(UUID userId, Map<String, Object> values) {
+    public UserPreferencesResponse updatePreferences(UUID userId, UpdatePreferencesRequest request) {
         getUser(userId);
         UserPreferences preferences = preferencesRepository.findById(userId)
             .orElseGet(() -> UserPreferences.builder().userId(userId).build());
-        if (values.get("theme") instanceof String theme) preferences.setTheme(theme);
-        if (values.get("accentColor") instanceof String accent) preferences.setAccentColor(accent);
-        if (values.get("weekStartsOn") instanceof Number week) preferences.setWeekStartsOn(week.shortValue());
-        if (values.get("dailyGoalHours") instanceof Number hours) preferences.setDailyGoalHours(BigDecimal.valueOf(hours.doubleValue()));
-        if (values.get("notificationSettings") instanceof Map<?, ?> settings) {
-            preferences.setNotificationSettings(objectMapper.convertValue(settings, Map.class));
-        }
-        if (values.get("focusSettings") instanceof Map<?, ?> settings) preferences.setFocusSettings(objectMapper.convertValue(settings, Map.class));
-        if (values.get("privacySettings") instanceof Map<?, ?> settings) preferences.setPrivacySettings(objectMapper.convertValue(settings, Map.class));
-        if (values.get("dashboardLayout") instanceof Map<?, ?> settings) preferences.setDashboardLayout(objectMapper.convertValue(settings, Map.class));
+        if (request.theme() != null) preferences.setTheme(request.theme());
+        if (request.accentColor() != null) preferences.setAccentColor(request.accentColor());
+        if (request.weekStartsOn() != null) preferences.setWeekStartsOn(request.weekStartsOn());
+        if (request.dailyGoalHours() != null) preferences.setDailyGoalHours(request.dailyGoalHours());
+        if (request.notificationSettings() != null) preferences.setNotificationSettings(request.notificationSettings());
+        if (request.focusSettings() != null) preferences.setFocusSettings(request.focusSettings());
+        if (request.privacySettings() != null) preferences.setPrivacySettings(request.privacySettings());
+        if (request.dashboardLayout() != null) preferences.setDashboardLayout(request.dashboardLayout());
         return toPreferences(preferencesRepository.save(preferences));
     }
 

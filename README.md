@@ -1,12 +1,12 @@
-# ✦ Lumina — Personal Excellence Platform
+# Lumina — Personal Excellence Platform
 
 > SaaS premium de produtividade humana, hábitos e evolução pessoal.
 
-## 🏗 Arquitetura
+## Arquitetura
 
 ```
 lumina/
-├── backend/          Java 21 + Spring Boot 3.3
+├── backend/          Java 21 + Spring Boot 3.5
 │   ├── api/          Controllers, DTOs, Middleware
 │   ├── application/  Services, Events
 │   ├── domain/       Entities, Repositories (JPA)
@@ -25,12 +25,12 @@ lumina/
     └── scripts/      DB init scripts
 ```
 
-## 🚀 Stack
+## Stack
 
 | Layer       | Technology                            |
 |-------------|---------------------------------------|
-| Backend     | Java 21 LTS, Spring Boot 3.3          |
-| Frontend    | Next.js 14, React 18, TypeScript      |
+| Backend     | Java 21 LTS, Spring Boot 3.5          |
+| Frontend    | Next.js 15, React 18, TypeScript      |
 | Database    | PostgreSQL 16                         |
 | Cache       | Redis 7.2                             |
 | Messaging   | RabbitMQ 3.13                         |
@@ -40,33 +40,33 @@ lumina/
 | CI/CD       | GitHub Actions                        |
 | Cloud       | AWS-ready (ECS / EC2 / RDS / ElastiCache) |
 
-## 🔒 Segurança
+## Segurança
 
-- JWT access token (15min) + refresh token rotativo (30d)
-- 2FA via TOTP (Google Authenticator)
-- OAuth2 (Google, GitHub)
-- OWASP Top 10
-- Rate limiting com Bucket4j + Redis
-- CSP, HSTS, Secure Headers
-- RBAC completo
-- Audit logs
-- Sessões por dispositivo com detecção de reuso
+- JWT de curta duração e refresh token rotativo em cookies `HttpOnly`, `Secure` e `SameSite=Strict`
+- autenticação e estado do usuário revalidados no backend
+- BCrypt com custo 12 para senhas e SHA-256 para refresh tokens persistidos
+- Row-Level Security no PostgreSQL com conta de aplicação sem privilégios administrativos
+- rate limiting por IP, CORS restrito, CSP, HSTS e headers de segurança
+- dependências e código verificados na CI com OWASP Dependency-Check e Semgrep
+- backups criptografados com AES-256-CBC/PBKDF2
 
-## 🎯 Funcionalidades
+Detalhes, evidências e requisitos operacionais estão em [docs/SECURITY-HARDENING.md](docs/SECURITY-HARDENING.md).
 
-- ✅ **Tarefas** — Projetos, subtarefas, prioridades, recorrência
-- 🔥 **Hábitos** — Streaks, frequência, lembretes, calendário
-- 🎯 **Metas** — Marcos, check-ins, progresso visual
-- 🧠 **Foco** — Pomodoro, Deep Work, Flow, Quick Burst
-- 📔 **Diário** — Editor rico, humor, energia, tags
-- 📚 **Livros** — Biblioteca, log de leitura, progresso
-- 📖 **Estudos** — Matérias, sessões, tempo acumulado
-- 📊 **Analytics** — Score, gráficos, insights com IA
-- 👥 **Social** — Feed de amigos, conquistas
-- 🗓 **Calendário** — Visão mensal de tarefas
-- 🏆 **Conquistas** — Sistema saudável de achievements
+## Funcionalidades
 
-## 🛠 Dev Local
+- **Tarefas** — Projetos, subtarefas, prioridades, recorrência
+- **Hábitos** — Streaks, frequência, lembretes, calendário
+- **Metas** — Marcos, check-ins, progresso visual
+- **Foco** — Pomodoro, Deep Work, Flow, Quick Burst
+- **Diário** — Editor rico, humor, energia, tags
+- **Livros** — Biblioteca, log de leitura, progresso
+- **Estudos** — Matérias, sessões, tempo acumulado
+- **Analytics** — Score, gráficos, insights com IA
+- **Social** — Feed de amigos, conquistas
+- **Calendário** — Visão mensal de tarefas
+- **Conquistas** — Sistema saudável de achievements
+
+## Desenvolvimento local
 
 ```bash
 # 1. Clone e configure
@@ -89,7 +89,7 @@ cd frontend && npm install && npm run dev
 - Swagger: http://localhost:8080/api/swagger-ui.html
 - RabbitMQ: http://localhost:15672
 
-## 🚢 Deploy
+## Deploy
 
 O deploy de produção usa Docker Compose, PostgreSQL persistente e Caddy com HTTPS automático.
 
@@ -115,16 +115,14 @@ cp deploy.env.example .env.production
 nano .env.production
 ```
 
-Gere os segredos:
+Gere segredos distintos para a conta de migração, conta da aplicação, Redis, RabbitMQ,
+JWT e backups:
 
 ```bash
 openssl rand -base64 48
-openssl rand -base64 48
-openssl rand -base64 48
-openssl rand -base64 64
 ```
 
-Preencha `DOMAIN`, `ACME_EMAIL`, as três senhas e `JWT_SECRET`, então:
+Preencha todas as variáveis obrigatórias do arquivo de exemplo, então:
 
 ```bash
 chmod +x scripts/*.sh
@@ -155,15 +153,16 @@ git pull --ff-only
 ./scripts/backup.sh
 
 # Restaurar um backup
-./scripts/restore.sh backups/lumina-AAAAMMDDTHHMMSSZ.sql.gz
+./scripts/restore.sh backups/lumina-AAAAMMDDTHHMMSSZ.sql.gz.enc
 ```
 
 Para deploy automático pelo GitHub Actions, configure:
 
 - Secrets: `PROD_HOST`, `PROD_USER`, `PROD_SSH_KEY`, `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_APP_URL`
+- Secret recomendado para acelerar o scan Java: `NVD_API_KEY`
 - Variable: `PROD_DOMAIN`
 - diretório `/opt/lumina` já clonado e `.env.production` preenchido no VPS
 
-## 📄 Licença
+## Licença
 
 MIT

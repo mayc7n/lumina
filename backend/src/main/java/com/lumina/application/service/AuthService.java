@@ -75,8 +75,8 @@ public class AuthService {
     }
 
     @Transactional
-    public AuthTokenResponse refresh(RefreshTokenRequest request) {
-        String rawToken = request.refreshToken();
+    public AuthTokenResponse refresh(String rawToken) {
+        if (rawToken == null || rawToken.isBlank()) throw invalidRefreshToken();
         if (!jwtService.isValid(rawToken) || !jwtService.isRefreshToken(rawToken)) {
             throw invalidRefreshToken();
         }
@@ -103,8 +103,9 @@ public class AuthService {
     }
 
     @Transactional
-    public void logout(LogoutRequest request) {
-        refreshTokenRepository.findByTokenHash(hash(request.refreshToken()))
+    public void logout(String rawToken) {
+        if (rawToken == null || rawToken.isBlank()) return;
+        refreshTokenRepository.findByTokenHash(hash(rawToken))
             .filter(RefreshToken::isUsable)
             .ifPresent(RefreshToken::revoke);
     }

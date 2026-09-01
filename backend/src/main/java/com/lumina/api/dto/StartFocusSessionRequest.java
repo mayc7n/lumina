@@ -11,5 +11,5 @@ import java.util.UUID;
 public record StartFocusSessionRequest(
     @NotBlank String mode,
     String taskId,
-    @NotNull Integer plannedMins
+    @NotNull @Min(1) @Max(1_440) Integer plannedMins
 ) {}

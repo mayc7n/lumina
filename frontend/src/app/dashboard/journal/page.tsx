@@ -5,17 +5,10 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { BookHeart, Calendar, Pin, Plus, Search, Save, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/shared/EmptyState'
+import { MoodScale, type MoodId } from '@/components/ui/Icons'
 import { useJournal } from '@/hooks/useJournal'
 import type { JournalEntry } from '@/lib/api/client'
 import { cn, formatDate } from '@/lib/utils'
-
-const MOODS = [
-  { value: 'TERRIBLE', icon: '😞', label: 'Péssimo' },
-  { value: 'BAD', icon: '😕', label: 'Ruim' },
-  { value: 'NEUTRAL', icon: '😐', label: 'Neutro' },
-  { value: 'GOOD', icon: '🙂', label: 'Bem' },
-  { value: 'EXCELLENT', icon: '😁', label: 'Ótimo' },
-]
 
 export default function JournalPage() {
   const [search, setSearch] = useState('')
@@ -23,31 +16,31 @@ export default function JournalPage() {
   const [selected, setSelected] = useState<JournalEntry | null>(null)
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
-  const [mood, setMood] = useState<string | undefined>()
+  const [mood, setMood] = useState<MoodId | null>(null)
 
   useEffect(() => {
     if (!selected) return
     setTitle(selected.title ?? '')
     setContent(selected.content)
-    setMood(selected.mood)
+    setMood((selected.mood as MoodId | undefined) ?? null)
   }, [selected])
 
   function newEntry() {
     setSelected(null)
     setTitle('')
     setContent('')
-    setMood(undefined)
+    setMood(null)
   }
 
   async function save() {
     if (!content.trim()) return
     try {
       if (selected) {
-        const updated = await updateEntry({ id: selected.id, data: { title: title.trim() || undefined, content: content.trim(), mood } })
+        const updated = await updateEntry({ id: selected.id, data: { title: title.trim() || undefined, content: content.trim(), mood: mood ?? undefined } })
         setSelected(updated)
       } else {
         const created = await createEntry({
-          title: title.trim() || undefined, content: content.trim(), mood,
+          title: title.trim() || undefined, content: content.trim(), mood: mood ?? undefined,
           entryDate: new Date().toISOString().slice(0, 10),
         })
         setSelected(created)
@@ -138,15 +131,7 @@ export default function JournalPage() {
 
             <div className="mt-6 border-t border-border pt-5">
               <p className="mb-3 text-xs font-medium text-foreground-muted">Como você está se sentindo?</p>
-              <div className="flex gap-2">
-                {MOODS.map(item => (
-                  <button key={item.value} onClick={() => setMood(item.value)}
-                    className={cn('flex items-center gap-2 rounded-xl border px-3 py-2 text-xs transition-all',
-                      mood === item.value ? 'border-brand bg-brand/10' : 'border-border hover:border-border-strong')}>
-                    <span className="text-lg">{item.icon}</span>{item.label}
-                  </button>
-                ))}
-              </div>
+              <MoodScale value={mood} onChange={setMood} />
             </div>
           </div>
         )}

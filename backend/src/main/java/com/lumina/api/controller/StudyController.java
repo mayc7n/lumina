@@ -10,7 +10,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -50,10 +49,10 @@ public class StudyController {
     @PatchMapping("/sessions/{sessionId}/end")
     public ApiResponse<StudySessionResponse> endSession(
         @AuthenticationPrincipal UserPrincipal principal, @PathVariable UUID sessionId,
-        @RequestBody(required = false) Map<String, Object> body
+        @Valid @RequestBody(required = false) EndStudySessionRequest request
     ) {
-        Short quality = body != null && body.get("quality") instanceof Number value ? value.shortValue() : null;
-        String notes = body != null && body.get("notes") instanceof String value ? value : null;
+        Short quality = request != null ? request.quality() : null;
+        String notes = request != null ? request.notes() : null;
         return ApiResponse.success(studyService.endSession(principal.getUserId(), sessionId, quality, notes));
     }
 }

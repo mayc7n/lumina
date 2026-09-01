@@ -1,16 +1,13 @@
 package com.lumina.api.controller;
 
-import com.lumina.api.dto.ApiResponse;
-import com.lumina.api.dto.UserResponse;
-import com.lumina.api.dto.UserPreferencesResponse;
+import com.lumina.api.dto.*;
 import com.lumina.application.service.UserService;
 import com.lumina.infrastructure.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
+import jakarta.validation.Valid;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.*;
-
-import java.util.Map;
 
 @RestController
 @RequestMapping("/users")
@@ -27,9 +24,9 @@ public class UserController {
 
     @PatchMapping("/me")
     public ApiResponse<UserResponse> updateProfile(
-        @AuthenticationPrincipal UserPrincipal principal, @RequestBody Map<String, Object> values
+        @AuthenticationPrincipal UserPrincipal principal, @Valid @RequestBody UpdateProfileRequest request
     ) {
-        return ApiResponse.success(userService.updateProfile(principal.getUserId(), values));
+        return ApiResponse.success(userService.updateProfile(principal.getUserId(), request));
     }
 
     @GetMapping("/me/preferences")
@@ -39,23 +36,25 @@ public class UserController {
 
     @PatchMapping("/me/preferences")
     public ApiResponse<UserPreferencesResponse> updatePreferences(
-        @AuthenticationPrincipal UserPrincipal principal, @RequestBody Map<String, Object> values
+        @AuthenticationPrincipal UserPrincipal principal, @Valid @RequestBody UpdatePreferencesRequest request
     ) {
-        return ApiResponse.success(userService.updatePreferences(principal.getUserId(), values));
+        return ApiResponse.success(userService.updatePreferences(principal.getUserId(), request));
     }
 
     @GetMapping(value = "/me/export", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<byte[]> export(@AuthenticationPrincipal UserPrincipal principal) {
         return ResponseEntity.ok()
             .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=lumina-data.json")
+            .header(HttpHeaders.CACHE_CONTROL, "no-store")
+            .header(HttpHeaders.PRAGMA, "no-cache")
             .body(userService.exportData(principal.getUserId()));
     }
 
     @DeleteMapping("/me")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(
-        @AuthenticationPrincipal UserPrincipal principal, @RequestBody Map<String, String> values
+        @AuthenticationPrincipal UserPrincipal principal, @Valid @RequestBody DeleteAccountRequest request
     ) {
-        userService.deleteAccount(principal.getUserId(), values.get("confirmation"));
+        userService.deleteAccount(principal.getUserId(), request.confirmation());
     }
 }

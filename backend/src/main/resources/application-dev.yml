@@ -42,6 +42,8 @@ lumina:
       refresh-token-expiration: 604800000   # 7 days in dev
     cors:
       allowed-origins: http://localhost:3000,http://localhost:3001
+    cookies:
+      secure: false
 
   rate-limit:
     enabled: false                           # Disable rate limiting in dev

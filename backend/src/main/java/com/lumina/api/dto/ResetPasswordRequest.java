@@ -9,6 +9,6 @@ import java.util.List;
 import java.util.UUID;
 
 public record ResetPasswordRequest(
-    @NotBlank String token,
-    @NotBlank @Size(min = 8) String newPassword
+    @NotBlank @Size(max = 2_048) String token,
+    @NotBlank @Size(min = 8, max = 128) String newPassword
 ) {}

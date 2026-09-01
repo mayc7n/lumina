@@ -13,7 +13,7 @@ public interface UserRepository extends JpaRepository<User,UUID> {
     Optional<User> findByUsernameAndDeletedAtIsNull(String username);
     boolean existsByEmail(String email);
     boolean existsByUsername(String username);
-    @Query("SELECT u FROM User u WHERE u.id=:id AND u.deletedAt IS NULL")
+    @Query("SELECT u FROM User u WHERE u.id=:id AND u.deletedAt IS NULL AND u.status='ACTIVE'")
     Optional<User> findActiveById(@Param("id") UUID id);
     @Query("SELECT u FROM User u WHERE u.deletedAt IS NULL AND u.id<>:uid AND (LOWER(u.displayName) LIKE LOWER(CONCAT('%',:query,'%')) OR LOWER(u.username) LIKE LOWER(CONCAT('%',:query,'%'))) ORDER BY u.displayName")
     List<User> searchActiveUsers(@Param("uid") UUID userId, @Param("query") String query, org.springframework.data.domain.Pageable pageable);

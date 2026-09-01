@@ -55,6 +55,7 @@ public class JwtService {
     public String extractRole(String token)    { return extractClaim(token, c -> c.get("role",String.class)); }
     public Instant extractExpiration(String token) { return extractClaim(token, c -> c.getExpiration().toInstant()); }
     public long getAccessExpirationSeconds() { return accessExpMs / 1000; }
+    public long getRefreshExpirationSeconds() { return refreshExpMs / 1000; }
     public <T> T extractClaim(String token, Function<Claims,T> fn) { return fn.apply(parseClaims(token)); }
 
     private Claims parseClaims(String token) {

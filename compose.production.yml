@@ -69,8 +69,10 @@ services:
       DB_HOST: postgres
       DB_PORT: "5432"
       DB_NAME: ${DB_NAME:-lumina}
-      DB_USERNAME: ${DB_USERNAME:-lumina}
-      DB_PASSWORD: ${DB_PASSWORD:?Defina DB_PASSWORD no arquivo .env.production}
+      DB_USERNAME: ${DB_APP_USERNAME:-lumina_app}
+      DB_PASSWORD: ${DB_APP_PASSWORD:?Defina DB_APP_PASSWORD no arquivo .env.production}
+      SPRING_FLYWAY_USER: ${DB_MIGRATION_USERNAME:-lumina_owner}
+      SPRING_FLYWAY_PASSWORD: ${DB_MIGRATION_PASSWORD:?Defina DB_MIGRATION_PASSWORD no arquivo .env.production}
       REDIS_HOST: redis
       REDIS_PORT: "6379"
       REDIS_PASSWORD: ${REDIS_PASSWORD:?Defina REDIS_PASSWORD no arquivo .env.production}
@@ -88,6 +90,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      database-bootstrap:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
       rabbitmq:
@@ -106,17 +110,35 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${DB_NAME:-lumina}
-      POSTGRES_USER: ${DB_USERNAME:-lumina}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:?Defina DB_PASSWORD no arquivo .env.production}
+      POSTGRES_USER: ${DB_MIGRATION_USERNAME:-lumina_owner}
+      POSTGRES_PASSWORD: ${DB_MIGRATION_PASSWORD:?Defina DB_MIGRATION_PASSWORD no arquivo .env.production}
     volumes:
       - postgres-data:/var/lib/postgresql/data
     networks:
       - private
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-lumina} -d ${DB_NAME:-lumina}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_MIGRATION_USERNAME:-lumina_owner} -d ${DB_NAME:-lumina}"]
       interval: 10s
       timeout: 5s
       retries: 10
+
+  database-bootstrap:
+    image: postgres:16-alpine
+    restart: "no"
+    environment:
+      DB_NAME: ${DB_NAME:-lumina}
+      DB_MIGRATION_USERNAME: ${DB_MIGRATION_USERNAME:-lumina_owner}
+      DB_MIGRATION_PASSWORD: ${DB_MIGRATION_PASSWORD:?Defina DB_MIGRATION_PASSWORD no arquivo .env.production}
+      DB_APP_USERNAME: ${DB_APP_USERNAME:-lumina_app}
+      DB_APP_PASSWORD: ${DB_APP_PASSWORD:?Defina DB_APP_PASSWORD no arquivo .env.production}
+    volumes:
+      - ./infrastructure/postgres/bootstrap-app-role.sh:/bootstrap-app-role.sh:ro
+    command: ["sh", "/bootstrap-app-role.sh"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - private
 
   redis:
     image: redis:7.2-alpine

@@ -11,7 +11,6 @@ import { Button } from '@/components/ui/Button'
 
 export default function LoginPage() {
   const router = useRouter()
-  const setTokens = useAuthStore(state => state.setTokens)
   const setUser = useAuthStore(state => state.setUser)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -25,8 +24,7 @@ export default function LoginPage() {
     setIsSubmitting(true)
 
     try {
-      const tokens = await authApi.login({ email, password })
-      setTokens(tokens.accessToken, tokens.refreshToken)
+      await authApi.login({ email, password })
       const user = await usersApi.getMe()
       setUser(user)
       router.replace('/dashboard')

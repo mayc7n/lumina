@@ -76,7 +76,7 @@ public class SocialService {
         return taskRepository.findRecentCompletedByUsers(friendIds, PageRequest.of(0, 30)).stream()
             .map(task -> new SocialFeedItemResponse(
                 task.getId().toString(), toSocialUser(task.getUser(), "ACCEPTED"),
-                "task_completed", task.getTitle(), task.getDescription(), "✓",
+                "task_completed", task.getTitle(), null, "check",
                 0, false, task.getCompletedAt().toString()))
             .toList();
     }

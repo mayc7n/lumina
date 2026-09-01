@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { Loader2, Sparkles } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
-import { usersApi } from '@/lib/api/client'
+import { migrateLegacySession, usersApi } from '@/lib/api/client'
 
 const PUBLIC = ['/auth/login', '/auth/register', '/auth/forgot-password', '/auth/reset-password', '/auth/verify-email', '/auth/2fa']
 
@@ -11,20 +11,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
   const [checking, setChecking] = useState(true)
-  const { accessToken, user, setUser, setLoading, logout } = useAuthStore()
+  const { user, setUser, setLoading, logout } = useAuthStore()
   const isPublicRoute = PUBLIC.some(path => pathname?.startsWith(path))
 
   useEffect(() => {
     let cancelled = false
 
     async function validateSession() {
-      if (!accessToken) {
-        setLoading(false)
-        setChecking(false)
-        if (!isPublicRoute) router.replace('/auth/login')
-        return
-      }
-
       if (user) {
         setChecking(false)
         if (isPublicRoute) router.replace('/dashboard')
@@ -33,6 +26,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       setChecking(true)
       try {
+        await migrateLegacySession()
         const currentUser = await usersApi.getMe()
         if (cancelled) return
         setUser(currentUser)
@@ -48,9 +42,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     void validateSession()
     return () => { cancelled = true }
-  }, [accessToken, isPublicRoute, logout, router, setLoading, setUser, user])
+  }, [isPublicRoute, logout, router, setLoading, setUser, user])
 
-  if (checking || (!isPublicRoute && !accessToken)) {
+  if (checking) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4 text-foreground-muted">

@@ -8,6 +8,7 @@ import { ptBR } from 'date-fns/locale'
 import { useHabitCompletions, useHabits } from '@/hooks/useHabits'
 import { cn } from '@/lib/utils'
 import type { Habit } from '@/lib/api/client'
+import { IconRenderer } from '@/components/ui/Icons'
 
 interface HabitDetailProps {
   habit: Habit
@@ -50,9 +51,9 @@ export function HabitDetail({ habit, onClose }: HabitDetailProps) {
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
         <div className="flex items-center gap-3">
-          <div className="size-9 rounded-xl flex items-center justify-center text-xl"
+          <div className="size-9 rounded-xl flex items-center justify-center"
             style={{ background: habit.color + '20' }}>
-            {habit.icon ?? '🔥'}
+            <IconRenderer name={habit.icon ?? 'flame'} size={17} style={{ color: habit.color }} />
           </div>
           <div>
             <h2 className="text-sm font-semibold">{habit.name}</h2>

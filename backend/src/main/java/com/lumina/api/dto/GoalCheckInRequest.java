@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.UUID;
 
 public record GoalCheckInRequest(
-    @NotNull Double value,
-    String note, String mood
+    @NotNull @Positive Double value,
+    @Size(max = 2_000) String note,
+    @Size(max = 20) String mood
 ) {}

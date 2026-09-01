@@ -36,7 +36,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
-  const { user, refreshToken, logout } = useAuthStore()
+  const { user, logout } = useAuthStore()
   const {
     notifications, unreadCount, isLoading: notificationsLoading,
     fetchNotifications, markRead, markAllRead, removeNotification,
@@ -56,7 +56,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
 
   async function handleLogout() {
     try {
-      if (refreshToken) await authApi.logout(refreshToken)
+      await authApi.logout()
     } finally {
       logout()
       router.replace('/auth/login')

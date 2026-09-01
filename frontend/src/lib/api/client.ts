@@ -5,46 +5,16 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8080/api'
 
 export const api: AxiosInstance = axios.create({
   baseURL: API_URL, timeout: 15000,
+  withCredentials: true,
   headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
 })
 
 let isRefreshing = false
-let queue: Array<{ resolve: (t: string) => void; reject: (e: unknown) => void }> = []
-
-interface StoredAuth {
-  state?: {
-    accessToken?: string | null
-    refreshToken?: string | null
-  }
-}
+let queue: Array<{ resolve: () => void; reject: (e: unknown) => void }> = []
+const NON_REFRESHABLE_AUTH_PATHS = ['/auth/login', '/auth/register', '/auth/refresh', '/auth/logout']
 
 interface ApiEnvelope<T> {
   data?: T
-}
-
-const readStoredAuth = (): StoredAuth | null => {
-  if (typeof window === 'undefined') return null
-
-  const raw = localStorage.getItem('lumina-auth')
-  if (!raw) return null
-
-  try {
-    const parsed: unknown = JSON.parse(raw)
-    if (!parsed || typeof parsed !== 'object') throw new Error('Invalid auth storage')
-    const stored = parsed as StoredAuth
-    const accessToken = stored.state?.accessToken
-    const refreshToken = stored.state?.refreshToken
-    if (
-      accessToken != null && typeof accessToken !== 'string' ||
-      refreshToken != null && typeof refreshToken !== 'string'
-    ) {
-      throw new Error('Invalid auth tokens')
-    }
-    return stored
-  } catch {
-    localStorage.removeItem('lumina-auth')
-    return null
-  }
 }
 
 const unwrapApiData = <T>(payload: ApiEnvelope<T> | T): T => {
@@ -54,35 +24,42 @@ const unwrapApiData = <T>(payload: ApiEnvelope<T> | T): T => {
   return payload as T
 }
 
-const processQueue = (err: unknown, token: string | null = null) => {
-  queue.forEach(({ resolve, reject }) => err ? reject(err) : resolve(token!))
+const processQueue = (err?: unknown) => {
+  queue.forEach(({ resolve, reject }) => err ? reject(err) : resolve())
   queue = []
 }
 
-api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-  const accessToken = useAuthStore.getState().accessToken ?? readStoredAuth()?.state?.accessToken
-  if (accessToken) {
-    config.headers.Authorization = `Bearer ${accessToken}`
+export async function migrateLegacySession(): Promise<void> {
+  if (typeof window === 'undefined') return
+  const raw = localStorage.getItem('lumina-auth')
+  if (!raw) return
+
+  try {
+    const parsed: unknown = JSON.parse(raw)
+    if (!parsed || typeof parsed !== 'object') return
+    const state = (parsed as { state?: { refreshToken?: unknown } }).state
+    if (typeof state?.refreshToken !== 'string' || !state.refreshToken) return
+    await axios.post(
+      `${API_URL}/auth/refresh`,
+      { refreshToken: state.refreshToken },
+      { withCredentials: true, headers: { 'X-Lumina-Legacy-Session': '1' } },
+    )
+  } finally {
+    localStorage.removeItem('lumina-auth')
   }
-  return config
-})
+}
 
 api.interceptors.response.use(r => r, async error => {
   const orig = error.config as (InternalAxiosRequestConfig & { _retry?: boolean }) | undefined
   if (!orig) return Promise.reject(error)
-  if (error.response?.status !== 401 || orig._retry) return Promise.reject(error)
-  if (isRefreshing) return new Promise<string>((resolve, reject) => queue.push({ resolve, reject }))
-    .then(t => { orig.headers.Authorization = `Bearer ${t}`; return api(orig) })
+  const isNonRefreshableAuthRequest = NON_REFRESHABLE_AUTH_PATHS.some(path => orig.url?.includes(path))
+  if (error.response?.status !== 401 || orig._retry || isNonRefreshableAuthRequest) return Promise.reject(error)
+  if (isRefreshing) return new Promise<void>((resolve, reject) => queue.push({ resolve, reject }))
+    .then(() => api(orig))
   orig._retry = true; isRefreshing = true
   try {
-    const currentRefreshToken = useAuthStore.getState().refreshToken ?? readStoredAuth()?.state?.refreshToken
-    if (!currentRefreshToken) throw new Error('No refresh token')
-    const res = await axios.post<ApiEnvelope<AuthTokens> | AuthTokens>(`${API_URL}/auth/refresh`, { refreshToken: currentRefreshToken })
-    const { accessToken, refreshToken: nextRefreshToken } = unwrapApiData<AuthTokens>(res.data)
-    if (!accessToken || !nextRefreshToken) throw new Error('Invalid refresh response')
-    useAuthStore.getState().setTokens(accessToken, nextRefreshToken)
-    processQueue(null, accessToken)
-    orig.headers.Authorization = `Bearer ${accessToken}`
+    await axios.post(`${API_URL}/auth/refresh`, undefined, { withCredentials: true })
+    processQueue()
     return api(orig)
   } catch (e) {
     processQueue(e)
@@ -110,10 +87,10 @@ export async function apiDelete<T = void>(url: string): Promise<T> {
 
 // Resource APIs
 export const authApi = {
-  register: (d: { email: string; username: string; displayName: string; password: string }) => apiPost<AuthTokens>('/auth/register', d),
-  login: (d: { email: string; password: string }) => apiPost<AuthTokens>('/auth/login', d),
-  logout: (refreshToken: string) => apiPost<void>('/auth/logout', { refreshToken }),
-  refresh: (refreshToken: string) => apiPost<AuthTokens>('/auth/refresh', { refreshToken }),
+  register: (d: { email: string; username: string; displayName: string; password: string }) => apiPost<AuthSession>('/auth/register', d),
+  login: (d: { email: string; password: string }) => apiPost<AuthSession>('/auth/login', d),
+  logout: () => apiPost<void>('/auth/logout'),
+  refresh: () => apiPost<AuthSession>('/auth/refresh'),
   forgotPassword: (email: string) => apiPost<void>('/auth/forgot-password', { email }),
   resetPassword: (token: string, newPassword: string) => apiPost<void>('/auth/reset-password', { token, newPassword }),
   verifyEmail: (token: string) => apiPost<void>('/auth/verify-email', { token }),
@@ -126,7 +103,15 @@ export const authApi = {
 export const usersApi = {
   getMe: () => apiGet<User>('/users/me'),
   updateProfile: (d: Partial<User>) => apiPatch<User>('/users/me', d),
-  uploadAvatar: (file: File) => { const fd = new FormData(); fd.append('file', file); return api.patch<ApiEnvelope<{ avatarUrl: string }> | { avatarUrl: string }>('/users/me/avatar', fd, { headers: { 'Content-Type': 'multipart/form-data' } }).then(r => unwrapApiData(r.data)) },
+  uploadAvatar: (file: File) => {
+    const allowedTypes = new Set(['image/jpeg', 'image/png', 'image/webp'])
+    if (!allowedTypes.has(file.type)) return Promise.reject(new Error('Formato de imagem não permitido'))
+    if (file.size > 2 * 1024 * 1024) return Promise.reject(new Error('A imagem deve ter no máximo 2 MB'))
+    const formData = new FormData()
+    formData.append('file', file)
+    return api.patch<ApiEnvelope<{ avatarUrl: string }> | { avatarUrl: string }>('/users/me/avatar', formData)
+      .then(response => unwrapApiData(response.data))
+  },
   getPreferences: () => apiGet<UserPreferences>('/users/me/preferences'),
   updatePreferences: (d: Record<string, unknown>) => apiPatch<UserPreferences>('/users/me/preferences', d),
   exportData: () => api.get('/users/me/export', { responseType: 'blob' }),
@@ -215,7 +200,7 @@ export const notificationsApi = {
 }
 
 // ── Types ──────────────────────────────────────────────────
-export interface AuthTokens { accessToken: string; refreshToken: string; expiresIn: number; requiresTwoFactor?: boolean; tempToken?: string }
+export interface AuthSession { expiresIn: number; requiresTwoFactor?: boolean; tempToken?: string }
 export interface User { id: string; email: string; username: string; displayName: string; avatarUrl?: string; bio?: string; timezone: string; locale: string; status: string; role: string; plan: string; emailVerified: boolean; twoFactorEnabled: boolean; onboardingComplete: boolean; lastSeenAt?: string; createdAt: string; accentColor?: string }
 export interface UserSession { id: string; deviceType: string; deviceName?: string; ipAddress?: string; lastUsedAt: string; createdAt: string; current?: boolean }
 export interface UserPreferences {

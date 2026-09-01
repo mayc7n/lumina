@@ -30,6 +30,8 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtFilter;
     private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
+    private final RateLimitFilter rateLimitFilter;
+    private final CookieOriginFilter cookieOriginFilter;
     @Value("${lumina.security.cors.allowed-origins}") private String allowedOrigins;
 
     @Bean
@@ -48,7 +50,13 @@ public class SecurityConfig {
                 .frameOptions(f -> f.deny())
                 .httpStrictTransportSecurity(s -> s.maxAgeInSeconds(31536000).includeSubDomains(true).preload(true))
                 .referrerPolicy(r -> r.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
-                .contentSecurityPolicy(c -> c.policyDirectives("default-src 'self'; script-src 'self'; frame-ancestors 'none'")))
+                .contentSecurityPolicy(c -> c.policyDirectives("default-src 'none'; frame-ancestors 'none'"))
+                .addHeaderWriter((request, response) -> {
+                    response.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+                    response.setHeader("Cross-Origin-Opener-Policy", "same-origin");
+                    response.setHeader("Cross-Origin-Resource-Policy", "same-site");
+                    response.setHeader("X-Permitted-Cross-Domain-Policies", "none");
+                }))
             .exceptionHandling(e -> e
                 .authenticationEntryPoint((request, response, exception) -> {
                     response.setStatus(401);
@@ -67,6 +75,8 @@ public class SecurityConfig {
                     );
                 }))
             .authenticationProvider(authenticationProvider(userDetailsService(), passwordEncoder()))
+            .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
+            .addFilterBefore(cookieOriginFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
             .build();
     }
@@ -74,9 +84,11 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigSource() {
         var config = new CorsConfiguration();
-        config.setAllowedOrigins(Arrays.asList(allowedOrigins.split(",")));
+        config.setAllowedOrigins(Arrays.stream(allowedOrigins.split(",")).map(String::trim).toList());
         config.setAllowedMethods(List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
-        config.setAllowedHeaders(List.of("*"));
+        config.setAllowedHeaders(List.of(
+            "Authorization", "Content-Type", "Accept", "X-Requested-With", "X-Lumina-Legacy-Session"
+        ));
         config.setAllowCredentials(true);
         config.setMaxAge(3600L);
         var source = new UrlBasedCorsConfigurationSource();

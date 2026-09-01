@@ -9,6 +9,6 @@ import java.util.List;
 import java.util.UUID;
 
 public record ChangePasswordRequest(
-    @NotBlank String currentPassword,
-    @NotBlank @Size(min = 8) String newPassword
+    @NotBlank @Size(max = 128) String currentPassword,
+    @NotBlank @Size(min = 8, max = 128) String newPassword
 ) {}

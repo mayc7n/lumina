@@ -18,12 +18,19 @@ set +a
 
 mkdir -p "$BACKUP_DIR"
 timestamp=$(date -u +%Y%m%dT%H%M%SZ)
-output="$BACKUP_DIR/lumina-$timestamp.sql.gz"
+output="$BACKUP_DIR/lumina-$timestamp.sql.gz.enc"
+
+if [ -z "${BACKUP_ENCRYPTION_PASSPHRASE:-}" ]; then
+  echo "Defina BACKUP_ENCRYPTION_PASSPHRASE para criptografar o backup."
+  exit 1
+fi
 
 cd "$ROOT_DIR"
 docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" exec -T postgres \
   pg_dump --clean --if-exists --no-owner --no-privileges \
-  -U "${DB_USERNAME:-lumina}" "${DB_NAME:-lumina}" | gzip -9 > "$output"
+  -U "${DB_MIGRATION_USERNAME:-lumina_owner}" "${DB_NAME:-lumina}" |
+  gzip -9 |
+  openssl enc -aes-256-cbc -salt -pbkdf2 -pass env:BACKUP_ENCRYPTION_PASSPHRASE > "$output"
 
-find "$BACKUP_DIR" -type f -name 'lumina-*.sql.gz' -mtime +14 -delete
+find "$BACKUP_DIR" -type f -name 'lumina-*.sql.gz.enc' -mtime +14 -delete
 echo "Backup criado: $output"

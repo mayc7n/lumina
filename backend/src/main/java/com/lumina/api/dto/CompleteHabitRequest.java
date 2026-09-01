@@ -8,4 +8,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
-public record CompleteHabitRequest(BigDecimal value, String note) {}
+public record CompleteHabitRequest(
+    @Positive @DecimalMax("99999999.99") BigDecimal value,
+    @Size(max = 500) String note
+) {}

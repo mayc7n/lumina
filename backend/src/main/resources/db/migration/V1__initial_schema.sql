@@ -457,20 +457,20 @@ CREATE TRIGGER trg_friendships_upd BEFORE UPDATE ON friendships FOR EACH ROW EXE
 
 -- Seed achievements
 INSERT INTO achievements (code, name, description, icon, category, points) VALUES
-('FIRST_TASK','Primeiros Passos','Completou sua primeira tarefa','✅','tasks',10),
-('TASK_STREAK_7','Semana Produtiva','Completou tarefas 7 dias seguidos','🔥','tasks',50),
-('HABIT_STREAK_7','Semana de Hábitos','Manteve hábito por 7 dias','🎯','habits',30),
-('HABIT_STREAK_30','Mestre dos Hábitos','Manteve hábito por 30 dias','💎','habits',100),
-('HABIT_STREAK_100','Hábito de Ferro','100 dias de sequência','🏆','habits',300),
-('FIRST_JOURNAL','Reflexão Inicial','Escreveu primeira entrada no diário','📔','journal',15),
-('JOURNAL_STREAK_7','Escritor Dedicado','Diário por 7 dias seguidos','✍️','journal',50),
-('FIRST_BOOK','Primeiro Livro','Completou a leitura de um livro','📚','books',25),
-('BOOKS_10','Bibliófilo','Leu 10 livros','📖','books',100),
-('FOCUS_1H','Entrando no Flow','Completou 1 hora de foco','🎯','focus',20),
-('FOCUS_10H','Focado','Acumulou 10 horas de foco','⚡','focus',60),
-('FOCUS_100H','Mestre do Foco','Acumulou 100 horas de foco','🧠','focus',200),
-('GOAL_COMPLETED','Meta Alcançada','Completou uma meta','🌟','goals',50),
-('STREAK_365','Ano Completo','Usou o Lumina por 365 dias','🔱','streak',500);
+('FIRST_TASK','Primeiros Passos','Completou sua primeira tarefa','check-circle','tasks',10),
+('TASK_STREAK_7','Semana Produtiva','Completou tarefas 7 dias seguidos','flame','tasks',50),
+('HABIT_STREAK_7','Semana de Hábitos','Manteve hábito por 7 dias','zap','habits',30),
+('HABIT_STREAK_30','Mestre dos Hábitos','Manteve hábito por 30 dias','diamond','habits',100),
+('HABIT_STREAK_100','Hábito de Ferro','100 dias de sequência','trophy','habits',300),
+('FIRST_JOURNAL','Reflexão Inicial','Escreveu primeira entrada no diário','pen-line','journal',15),
+('JOURNAL_STREAK_7','Escritor Dedicado','Diário por 7 dias seguidos','book-open','journal',50),
+('FIRST_BOOK','Primeiro Livro','Completou a leitura de um livro','book-marked','books',25),
+('BOOKS_10','Bibliófilo','Leu 10 livros','graduation','books',100),
+('FOCUS_1H','Entrando no Flow','Completou 1 hora de foco','timer','focus',20),
+('FOCUS_10H','Focado','Acumulou 10 horas de foco','zap','focus',60),
+('FOCUS_100H','Mestre do Foco','Acumulou 100 horas de foco','brain','focus',200),
+('GOAL_COMPLETED','Meta Alcançada','Completou uma meta','target','goals',50),
+('STREAK_365','Ano Completo','Usou o Lumina por 365 dias','star','streak',500);
 
 INSERT INTO feature_flags (code, description, enabled, plan_gate) VALUES
 ('AI_INSIGHTS','AI-powered insights',TRUE,'PRO'),

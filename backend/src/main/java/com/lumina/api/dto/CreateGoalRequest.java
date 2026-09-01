@@ -10,9 +10,12 @@ import java.util.UUID;
 
 public record CreateGoalRequest(
     @NotBlank @Size(max = 200) String title,
-    String description, String icon, String color,
+    @Size(max = 10_000) String description,
+    @Size(max = 50) String icon,
+    @Size(max = 20) String color,
     @NotBlank String period,
     String startDate, String endDate,
-    Double targetValue, String unit,
+    @Positive Double targetValue,
+    @Size(max = 50) String unit,
     Boolean isPublic
 ) {}

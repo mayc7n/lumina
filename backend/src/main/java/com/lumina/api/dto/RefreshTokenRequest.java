@@ -8,4 +8,4 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
-public record RefreshTokenRequest(@NotBlank String refreshToken) {}
+public record RefreshTokenRequest(@NotBlank @Size(max = 4_096) String refreshToken) {}

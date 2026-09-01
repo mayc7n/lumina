@@ -16,7 +16,7 @@ set -a
 . "$ENV_FILE"
 set +a
 
-required_vars="DOMAIN ACME_EMAIL DB_PASSWORD REDIS_PASSWORD RABBITMQ_PASSWORD JWT_SECRET"
+required_vars="DOMAIN ACME_EMAIL DB_MIGRATION_PASSWORD DB_APP_PASSWORD REDIS_PASSWORD RABBITMQ_PASSWORD JWT_SECRET BACKUP_ENCRYPTION_PASSPHRASE"
 for variable in $required_vars; do
   eval "value=\${$variable:-}"
   if [ -z "$value" ]; then
@@ -25,7 +25,7 @@ for variable in $required_vars; do
   fi
 done
 
-case "$DB_PASSWORD $REDIS_PASSWORD $RABBITMQ_PASSWORD $JWT_SECRET" in
+case "$DB_MIGRATION_PASSWORD $DB_APP_PASSWORD $REDIS_PASSWORD $RABBITMQ_PASSWORD $JWT_SECRET $BACKUP_ENCRYPTION_PASSPHRASE" in
   *GERE_*|*CHANGE_ME*)
     echo "Substitua todos os segredos de exemplo antes do deploy."
     exit 1

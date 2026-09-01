@@ -10,7 +10,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
-import java.util.*;
+import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/habits")
@@ -70,9 +71,9 @@ public class HabitController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void uncomplete(
         @AuthenticationPrincipal UserPrincipal principal, @PathVariable UUID habitId,
-        @RequestBody(required = false) Map<String, String> body
+        @Valid @RequestBody(required = false) UncompleteHabitRequest request
     ) {
-        LocalDate date = body != null && body.get("date") != null ? LocalDate.parse(body.get("date")) : LocalDate.now();
+        LocalDate date = request != null && request.date() != null ? request.date() : LocalDate.now();
         habitService.uncomplete(principal.getUserId(), habitId, date);
     }
 

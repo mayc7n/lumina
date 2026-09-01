@@ -10,12 +10,12 @@ import java.util.UUID;
 
 public record CreateTaskRequest(
     @NotBlank @Size(max = 500) String title,
-    String description,
+    @Size(max = 10_000) String description,
     String priority,
     String dueDate,
     String dueTime,
     String scheduledFor,
-    Integer estimatedMins,
+    @Positive @Max(525_600) Integer estimatedMins,
     String projectId,
-    List<String> labelIds
+    @Size(max = 50) List<String> labelIds
 ) {}

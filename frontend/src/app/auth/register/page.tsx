@@ -11,7 +11,6 @@ import { Button } from '@/components/ui/Button'
 
 export default function RegisterPage() {
   const router = useRouter()
-  const setTokens = useAuthStore(state => state.setTokens)
   const setUser = useAuthStore(state => state.setUser)
   const [displayName, setDisplayName] = useState('')
   const [username, setUsername] = useState('')
@@ -32,8 +31,7 @@ export default function RegisterPage() {
 
     setIsSubmitting(true)
     try {
-      const tokens = await authApi.register({ email, username, displayName, password })
-      setTokens(tokens.accessToken, tokens.refreshToken)
+      await authApi.register({ email, username, displayName, password })
       const user = await usersApi.getMe()
       setUser(user)
       router.replace('/dashboard')

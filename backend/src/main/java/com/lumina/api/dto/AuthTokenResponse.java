@@ -1,17 +1,12 @@
 package com.lumina.api.dto;
 
-import jakarta.validation.constraints.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Builder;
-
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.util.List;
-import java.util.UUID;
 
 @Builder
 public record AuthTokenResponse(
-    String accessToken,
-    String refreshToken,
+    @JsonIgnore String accessToken,
+    @JsonIgnore String refreshToken,
     Integer expiresIn,
     Boolean requiresTwoFactor,
     String tempToken

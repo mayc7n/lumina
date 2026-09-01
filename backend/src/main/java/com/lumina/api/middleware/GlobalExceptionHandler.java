@@ -7,6 +7,8 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -30,6 +32,10 @@ public class GlobalExceptionHandler {
     }
     @ExceptionHandler(RateLimitExceededException.class)
     public ResponseEntity<ApiResponse<Void>> rateLimit(RateLimitExceededException e){ return ResponseEntity.status(429).body(ApiResponse.error("RATE_LIMITED",e.getMessage())); }
+    @ExceptionHandler({HttpMessageNotReadableException.class, MethodArgumentTypeMismatchException.class, ConstraintViolationException.class})
+    public ResponseEntity<ApiResponse<Void>> malformed(Exception e){
+        return ResponseEntity.badRequest().body(ApiResponse.error("INVALID_REQUEST","Requisição inválida"));
+    }
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> generic(Exception e){ log.error("Unhandled error",e); return ResponseEntity.status(500).body(ApiResponse.error("INTERNAL_ERROR","An unexpected error occurred")); }
 

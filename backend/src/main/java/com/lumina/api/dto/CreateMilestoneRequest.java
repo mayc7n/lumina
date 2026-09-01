@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.UUID;
 
 public record CreateMilestoneRequest(
-    @NotBlank String title,
-    String description, Double targetValue, String dueDate
+    @NotBlank @Size(max = 200) String title,
+    @Size(max = 500) String description,
+    @Positive Double targetValue,
+    String dueDate
 ) {}

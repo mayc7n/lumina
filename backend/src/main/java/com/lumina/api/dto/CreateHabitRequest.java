@@ -10,9 +10,12 @@ import java.util.UUID;
 
 public record CreateHabitRequest(
     @NotBlank @Size(max = 200) String name,
-    String description, String icon, String color,
+    @Size(max = 500) String description,
+    @Size(max = 50) String icon,
+    @Size(max = 20) String color,
     String habitType, String frequency,
-    List<Integer> frequencyDays,
-    BigDecimal targetValue, String targetUnit,
+    @Size(max = 7) List<@Min(1) @Max(7) Integer> frequencyDays,
+    @Positive BigDecimal targetValue,
+    @Size(max = 50) String targetUnit,
     String startDate, String reminderTime
 ) {}
