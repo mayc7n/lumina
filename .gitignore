@@ -1,0 +1,26 @@
+# Frontend
+**/node_modules/
+**/.next/
+dist/
+build/
+*.tsbuildinfo
+
+# Backend (Java)
+**/target/
+*.class
+*.jar
+*.war
+
+# IDEs e Ambientes
+.idea/
+.vscode/
+*.iml
+
+# Configurações locais
+.env*
+!.env.example
+!**/.env.example
+backups/
+
+# Arquivos temporários de editores
+tempCodeRunnerFile.java

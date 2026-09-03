@@ -1,0 +1,58 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%; --background-elevated: 0 0% 98.5%; --background-overlay: 0 0% 96.5%;
+    --foreground: 220 16% 10%; --foreground-muted: 220 9% 36%; --foreground-subtle: 220 7% 56%;
+    --border: 220 13% 91%; --border-strong: 220 13% 82%;
+    --brand: 239 84% 67%; --brand-foreground: 0 0% 100%; --brand-muted: 239 84% 97%;
+    --success: 142 71% 45%; --success-foreground: 0 0% 100%; --success-muted: 142 71% 96%;
+    --warning: 38 92% 50%; --warning-foreground: 0 0% 100%; --warning-muted: 38 92% 96%;
+    --danger: 0 84% 60%; --danger-foreground: 0 0% 100%; --danger-muted: 0 84% 97%;
+  }
+  .dark {
+    --background: 220 16% 8%; --background-elevated: 220 14% 10%; --background-overlay: 220 13% 12%;
+    --foreground: 220 14% 96%; --foreground-muted: 220 9% 65%; --foreground-subtle: 220 7% 45%;
+    --border: 220 13% 16%; --border-strong: 220 13% 22%;
+    --brand: 239 84% 67%; --brand-foreground: 0 0% 100%; --brand-muted: 239 84% 13%;
+    --success: 142 71% 45%; --success-foreground: 0 0% 100%; --success-muted: 142 71% 10%;
+    --warning: 38 92% 50%; --warning-foreground: 0 0% 100%; --warning-muted: 38 92% 10%;
+    --danger: 0 84% 60%; --danger-foreground: 0 0% 100%; --danger-muted: 0 84% 10%;
+  }
+}
+@layer base {
+  * { @apply border-border; }
+  html { -webkit-font-smoothing: antialiased; font-feature-settings: 'cv02','cv03','cv04','cv11'; }
+  body { @apply bg-background text-foreground; font-family: var(--font-geist-sans), system-ui, sans-serif; }
+  :focus-visible { @apply outline-none ring-2 ring-brand ring-offset-2 ring-offset-background; }
+  ::-webkit-scrollbar { @apply w-[5px] h-[5px]; }
+  ::-webkit-scrollbar-track { @apply bg-transparent; }
+  ::-webkit-scrollbar-thumb { @apply bg-border rounded-full; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-border-strong; }
+  ::selection { background: hsl(var(--brand)/0.15); }
+}
+@layer components {
+  .glass { @apply bg-background/80 backdrop-blur-xl border border-border; }
+  .card { @apply bg-background-elevated border border-border rounded-xl; }
+  .card-hover { @apply card transition-all duration-200 hover:border-border-strong hover:shadow-sm cursor-pointer; }
+  .sidebar-item { @apply relative flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-foreground-muted transition-all duration-150 cursor-pointer hover:bg-background-overlay hover:text-foreground; }
+  .sidebar-item.active { @apply bg-background-overlay text-foreground; }
+  .input-base { @apply w-full px-3 py-2 text-sm bg-background border border-border rounded-lg placeholder:text-foreground-subtle focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent transition-all duration-150; }
+  .btn-primary { @apply inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium bg-brand text-brand-foreground rounded-lg hover:opacity-90 active:scale-95 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed; }
+  .btn-secondary { @apply inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium bg-background-overlay text-foreground border border-border rounded-lg hover:border-border-strong active:scale-95 transition-all duration-150 disabled:opacity-50; }
+  .btn-ghost { @apply inline-flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-foreground-muted rounded-lg hover:bg-background-overlay hover:text-foreground active:scale-95 transition-all duration-150 disabled:opacity-50; }
+  .btn-danger { @apply inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium bg-danger text-danger-foreground rounded-lg hover:opacity-90 active:scale-95 transition-all duration-150 disabled:opacity-50; }
+  .badge { @apply inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-md; }
+  .progress-bar { @apply relative h-1.5 rounded-full overflow-hidden bg-background-overlay; }
+  .progress-fill { @apply absolute left-0 top-0 h-full rounded-full bg-brand transition-all duration-700 ease-out; }
+  .task-item { @apply flex items-start gap-3 p-3 rounded-lg transition-all duration-150 hover:bg-background-overlay group cursor-pointer; }
+}
+@layer utilities {
+  .gradient-text { @apply bg-clip-text text-transparent bg-gradient-to-r from-brand to-violet-500; }
+  .auth-grid { background-image: linear-gradient(hsl(var(--border)/0.45) 1px,transparent 1px),linear-gradient(90deg,hsl(var(--border)/0.45) 1px,transparent 1px); background-size:48px 48px; mask-image:linear-gradient(to bottom,black,transparent 90%); }
+  .shimmer { background: linear-gradient(90deg,hsl(var(--background-elevated)) 0%,hsl(var(--background-overlay)) 50%,hsl(var(--background-elevated)) 100%); background-size:200% 100%; animation: shimmer 2s linear infinite; }
+  .text-2xs { font-size: 0.625rem; line-height: 0.75rem; }
+}
+@keyframes shimmer { from{background-position:-200% 0} to{background-position:200% 0} }
